@@ -56,291 +56,304 @@ if (SPLATNET_VERSION.length === 0) {
   return;
 }
 
+// Fetch uploaded battles.
+const uploadedBattleIds = await getUploaded("s3s");
+
 // Fetch latest battles.
 // TODO: fetch the latest 50 battles in each modes.
 const battleData = await fetchGraphQl("b24d22fd6cb251c515c2b90044039698aa27bc1fab15801d83014d919cd45780", {});
-const battleNodes = battleData["latestBattleHistories"]["historyGroups"]["nodes"][0]["historyDetails"]["nodes"];
-console.log(`Battle nodes: ${battleNodes.length}`);
-for (const node of battleNodes) {
-  const id = node["id"];
-  console.log(`Battle ID: ${id}`);
-  const data = await fetchGraphQl("f893e1ddcfb8a4fd645fd75ced173f18b2750e5cfba41d2669b9814f6ceaec46", { vsResultId: id });
+const battleGroups = battleData["latestBattleHistories"]["historyGroups"]["nodes"];
+console.log(`Battle groups: ${battleGroups.length}`);
+for (const group of battleGroups) {
+  const battleNodes = group["historyDetails"]["nodes"];
+  console.log(`Battle nodes: ${battleNodes.length}`);
+  for (const node of battleNodes) {
+    const id = node["id"];
+    console.log(`Battle ID: ${id}`);
+    const uuid = await generateUuid5("b3a2dbf5-2c09-4792-b78c-00b548b70aeb", Data.fromBase64String(id).toRawString().slice(-52));
+    if (uploadedBattleIds.includes(uuid)) {
+      console.log("Omit");
+      continue;
+    }
 
-  // Format payload for battle.
-  const battle = data["vsHistoryDetail"];
-  const payload = {};
+    const data = await fetchGraphQl("f893e1ddcfb8a4fd645fd75ced173f18b2750e5cfba41d2669b9814f6ceaec46", { vsResultId: id });
 
-  // UUID.
-  payload["uuid"] = await generateUuid5("b3a2dbf5-2c09-4792-b78c-00b548b70aeb", Data.fromBase64String(id).toRawString().slice(-52));
+    // Format payload for battle.
+    const battle = data["vsHistoryDetail"];
+    const payload = {};
 
-  // Mode.
-  const mode = battle["vsMode"]["mode"];
-  switch (mode) {
-    case "REGULAR":
-      payload["lobby"] = "regular";
-      break;
-    case "BANKARA":
-      switch (battle["bankaraMatch"]["mode"]) {
-        case "OPEN":
-          payload["lobby"] = "bankara_open";
-          break;
-        case "CHALLENGE":
-          payload["lobby"] = "bankara_challenge";
-          break;
-      }
-      break;
-    case "X_MATCH":
-      payload["lobby"] = "xmatch";
-      break;
-    case "LEAGUE":
-      payload["lobby"] = "event";
-      break;
-    case "PRIVATE":
-      payload["lobby"] = "private";
-      break;
-    case "FEST":
-      switch (decodeBase64Index(mode)) {
-        case 6:
-        case 8:
-          payload["lobby"] = "splatfest_open";
-          break;
-        case 7:
-          payload["lobby"] = "splatfest_challenge";
-          break;
-      }
-      break;
-  }
+    // UUID.
+    payload["uuid"] = uuid;
 
-  // Rule.
-  const rule = battle["vsRule"]["rule"];
-  switch (rule) {
-    case "TURF_WAR":
-      payload["rule"] = "nawabari";
-      break;
-    case "AREA":
-      payload["rule"] = "area";
-      break;
-    case "LOFT":
-      payload["rule"] = "yagura";
-      break;
-    case "GOAL":
-      payload["rule"] = "hoko";
-      break;
-    case "CLAM":
-      payload["rule"] = "asari";
-      break;
-    case "TRI_COLOR":
-      payload["rule"] = "tricolor";
-      break;
-  }
-
-  // Stage.
-  payload["stage"] = decodeBase64Index(battle["vsStage"]["id"]);
-
-  // Player and teams.
-  for (let i = 0; i < battle["myTeam"]["players"].length; i++) {
-    const player = battle["myTeam"]["players"][i];
-    if (player["isMyself"]) {
-      payload["weapon"] = decodeBase64Index(player["weapon"]["id"]);
-      payload["inked"] = player["paint"];
-      payload["species"] = player["species"].toLowerCase();
-      payload["rank_in_team"] = i + 1;
-      if (player["result"]) {
-        payload["kill_or_assist"] = player["result"]["kill"];
-        payload["assist"] = player["result"]["assist"];
-        payload["kill"] = payload["kill_or_assist"] - payload["assist"];
-        payload["death"] = player["result"]["death"];
-        payload["special"] = player["result"]["special"];
-        payload["signal"] = player["result"]["noroshiTry"];
+    // Mode.
+    const mode = battle["vsMode"]["mode"];
+    switch (mode) {
+      case "REGULAR":
+        payload["lobby"] = "regular";
         break;
+      case "BANKARA":
+        switch (battle["bankaraMatch"]["mode"]) {
+          case "OPEN":
+            payload["lobby"] = "bankara_open";
+            break;
+          case "CHALLENGE":
+            payload["lobby"] = "bankara_challenge";
+            break;
+        }
+        break;
+      case "X_MATCH":
+        payload["lobby"] = "xmatch";
+        break;
+      case "LEAGUE":
+        payload["lobby"] = "event";
+        break;
+      case "PRIVATE":
+        payload["lobby"] = "private";
+        break;
+      case "FEST":
+        switch (decodeBase64Index(battle["vsMode"]["id"])) {
+          case 6:
+          case 8:
+            payload["lobby"] = "splatfest_open";
+            break;
+          case 7:
+            payload["lobby"] = "splatfest_challenge";
+            break;
+        }
+        break;
+    }
+
+    // Rule.
+    const rule = battle["vsRule"]["rule"];
+    switch (rule) {
+      case "TURF_WAR":
+        payload["rule"] = "nawabari";
+        break;
+      case "AREA":
+        payload["rule"] = "area";
+        break;
+      case "LOFT":
+        payload["rule"] = "yagura";
+        break;
+      case "GOAL":
+        payload["rule"] = "hoko";
+        break;
+      case "CLAM":
+        payload["rule"] = "asari";
+        break;
+      case "TRI_COLOR":
+        payload["rule"] = "tricolor";
+        break;
+    }
+
+    // Stage.
+    payload["stage"] = decodeBase64Index(battle["vsStage"]["id"]);
+
+    // Player and teams.
+    for (let i = 0; i < battle["myTeam"]["players"].length; i++) {
+      const player = battle["myTeam"]["players"][i];
+      if (player["isMyself"]) {
+        payload["weapon"] = decodeBase64Index(player["weapon"]["id"]);
+        payload["inked"] = player["paint"];
+        payload["species"] = player["species"].toLowerCase();
+        payload["rank_in_team"] = i + 1;
+        if (player["result"]) {
+          payload["kill_or_assist"] = player["result"]["kill"];
+          payload["assist"] = player["result"]["assist"];
+          payload["kill"] = payload["kill_or_assist"] - payload["assist"];
+          payload["death"] = player["result"]["death"];
+          payload["special"] = player["result"]["special"];
+          payload["signal"] = player["result"]["noroshiTry"];
+          break;
+        }
       }
     }
-  }
-  payload["our_team_inked"] = battle["myTeam"]["players"].reduce((prev, cur) => prev + cur["paint"], 0);
-  payload["their_team_inked"] = battle["otherTeams"][0]["players"].reduce((prev, cur) => prev + cur["paint"], 0);
-  if (battle["otherTeams"].length > 1) {
-    payload["third_team_inked"] = battle["otherTeams"][1]["players"].reduce((prev, cur) => prev + cur["paint"], 0);
-  }
+    payload["our_team_inked"] = battle["myTeam"]["players"].reduce((prev, cur) => prev + cur["paint"], 0);
+    payload["their_team_inked"] = battle["otherTeams"][0]["players"].reduce((prev, cur) => prev + cur["paint"], 0);
+    if (battle["otherTeams"].length > 1) {
+      payload["third_team_inked"] = battle["otherTeams"][1]["players"].reduce((prev, cur) => prev + cur["paint"], 0);
+    }
 
-  // Result.
-  switch (battle["judgement"]) {
-    case "WIN":
-      payload["result"] = "win";
-      break;
-    case "LOSE":
-    case "DEEMED_LOSE":
-      payload["result"] = "lose";
-      break;
-    case "EXEMPTED_LOSE":
-      payload["result"] = "exempted_lose";
-      break;
-    case "DRAW":
-      payload["result"] = "draw";
-      break;
-  }
+    // Result.
+    switch (battle["judgement"]) {
+      case "WIN":
+        payload["result"] = "win";
+        break;
+      case "LOSE":
+      case "DEEMED_LOSE":
+        payload["result"] = "lose";
+        break;
+      case "EXEMPTED_LOSE":
+        payload["result"] = "exempted_lose";
+        break;
+      case "DRAW":
+        payload["result"] = "draw";
+        break;
+    }
 
-  // Basic info.
-  switch (rule) {
-    case "TURF_WAR":
-    case "TRI_COLOR":
-      try {
-        payload["our_team_percent"] = battle["myTeam"]["result"]["paintRatio"] * 100;
-        payload["their_team_percent"] = battle["otherTeams"][0]["result"]["paintRatio"] * 100;
-        payload["third_team_percent"] = battle["otherTeams"][1]["result"]["paintRatio"] * 100;
-      } catch {}
-      break;
-    default:
-      try {
-        payload["knockout"] = !battle["knockout"] || battle["knockout"] == "NEITHER" ? "no" : "yes";
-        payload["our_team_count"] = battle["myTeam"]["result"]["score"];
-        payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"];
-      } catch {}
-      break;
-  }
+    // Basic info.
+    switch (rule) {
+      case "TURF_WAR":
+      case "TRI_COLOR":
+        try {
+          payload["our_team_percent"] = battle["myTeam"]["result"]["paintRatio"] * 100;
+          payload["their_team_percent"] = battle["otherTeams"][0]["result"]["paintRatio"] * 100;
+          payload["third_team_percent"] = battle["otherTeams"][1]["result"]["paintRatio"] * 100;
+        } catch {}
+        break;
+      default:
+        try {
+          payload["knockout"] = !battle["knockout"] || battle["knockout"] == "NEITHER" ? "no" : "yes";
+          payload["our_team_count"] = battle["myTeam"]["result"]["score"];
+          payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"];
+        } catch {}
+        break;
+    }
 
-  // Times.
-  payload["start_at"] = Math.floor(new Date(battle["playedTime"]).valueOf() / 1000);
-  payload["end_at"] = payload["start_at"] + battle["duration"];
+    // Times.
+    payload["start_at"] = Math.floor(new Date(battle["playedTime"]).valueOf() / 1000);
+    payload["end_at"] = payload["start_at"] + battle["duration"];
 
-  // Colors.
-  payload["our_team_color"] = convertColor(battle["myTeam"]["color"]);
-  payload["their_team_color"] = convertColor(battle["otherTeams"][0]["color"]);
-  if (rule === "TRI_COLOR") {
-    payload["third_team_color"] = convertColor(battle["otherTeams"][1]["color"]);
-  }
+    // Colors.
+    payload["our_team_color"] = convertColor(battle["myTeam"]["color"]);
+    payload["their_team_color"] = convertColor(battle["otherTeams"][0]["color"]);
+    if (rule === "TRI_COLOR") {
+      payload["third_team_color"] = convertColor(battle["otherTeams"][1]["color"]);
+    }
 
-  // Players.
-  const teams = [battle["myTeam"], ...battle["otherTeams"]];
-  for (let i = 0; i < teams.length; i++) {
-    const team = teams[i];
-    const teamPayload = [];
-    for (const player of team["players"]) {
-      playerPayload = {};
-      playerPayload["me"] = player["isMyself"] ? "yes" : "no";
-      playerPayload["name"] = player["name"];
-      if (player["nameId"]) {
-        playerPayload["number"] = player["nameId"];
+    // Players.
+    const teams = [battle["myTeam"], ...battle["otherTeams"]];
+    for (let i = 0; i < teams.length; i++) {
+      const team = teams[i];
+      const teamPayload = [];
+      for (const player of team["players"]) {
+        playerPayload = {};
+        playerPayload["me"] = player["isMyself"] ? "yes" : "no";
+        playerPayload["name"] = player["name"];
+        if (player["nameId"]) {
+          playerPayload["number"] = player["nameId"];
+        }
+        playerPayload["splashtag_title"] = player["byname"];
+        playerPayload["weapon"] = decodeBase64Index(player["weapon"]["id"]);
+        playerPayload["inked"] = player["paint"];
+        playerPayload["species"] = player["species"].toLowerCase();
+        playerPayload["rank_in_team"] = i + 1;
+
+        if (player["crown"]) {
+          playerPayload["crown_type"] = "x";
+        }
+        switch (player["festDragonCert"]) {
+          case "DRAGON":
+            playerPayload["crown_type"] = "100x";
+            break;
+          case "DOUBLE_DRAGON":
+            playerPayload["crown_type"] = "333x";
+            break;
+        }
+
+        if (player["result"]) {
+          playerPayload["kill_or_assist"] = player["result"]["kill"];
+          playerPayload["assist"] = player["result"]["assist"];
+          playerPayload["kill"] = playerPayload["kill_or_assist"] - playerPayload["assist"];
+          playerPayload["death"] = player["result"]["death"];
+          playerPayload["special"] = player["result"]["special"];
+          playerPayload["signal"] = player["result"]["noroshiTry"];
+          playerPayload["disconnected"] = "no";
+          playerPayload["crown"] = player["crown"] ? "yes" : "no";
+          playerPayload["gears"] = {};
+
+          const Gears = { headGear: "headgear", clothingGear: "clothing", shoesGear: "shoes" };
+          for (const key of Object.keys(Gears)) {
+            const gearPayload = { primary_ability: translateGearAbility(player[key]["primaryGearPower"]["image"]["url"]), secondary_abilities: [] };
+            for (const ability of player[key]["additionalGearPowers"]) {
+              gearPayload.secondary_abilities.push(translateGearAbility(ability["image"]["url"]));
+            }
+            playerPayload["gears"][Gears[key]] = gearPayload;
+          }
+        } else {
+          playerPayload["disconnected"] = "yes";
+        }
+
+        teamPayload.push(playerPayload);
       }
-      playerPayload["splashtag_title"] = player["byname"];
-      playerPayload["weapon"] = decodeBase64Index(player["weapon"]["id"]);
-      playerPayload["inked"] = player["paint"];
-      playerPayload["species"] = player["species"].toLowerCase();
-      playerPayload["rank_in_team"] = i + 1;
 
-      if (player["crown"]) {
-        playerPayload["crown_type"] = "x";
+      switch (i) {
+        case 0:
+          payload["our_team_players"] = teamPayload;
+          break;
+        case 1:
+          payload["their_team_players"] = teamPayload;
+          break;
+        case 2:
+          payload["third_team_players"] = teamPayload;
+          break;
       }
-      switch (player["festDragonCert"]) {
+    }
+
+    // Splatfest Battles.
+    if (mode === "FEST") {
+      payload["our_team_theme"] = battle["myTeam"]["festTeamName"];
+      payload["their_team_theme"] = battle["otherTeams"][0]["festTeamName"];
+      switch (battle["festMatch"]["dragonMatchType"]) {
+        case "DECUPLE":
+          payload["fest_dragon"] = "10x";
+          break;
         case "DRAGON":
-          playerPayload["crown_type"] = "100x";
+          payload["fest_dragon"] = "100x";
           break;
         case "DOUBLE_DRAGON":
-          playerPayload["crown_type"] = "333x";
+          payload["fest_dragon"] = "333x";
           break;
       }
+      payload["clout_change"] = battle["festMatch"]["contribution"];
+      payload["fest_power"] = battle["festMatch"]["myFestPower"];
 
-      if (player["result"]) {
-        playerPayload["kill_or_assist"] = player["result"]["kill"];
-        playerPayload["assist"] = player["result"]["assist"];
-        playerPayload["kill"] = playerPayload["kill_or_assist"] - playerPayload["assist"];
-        playerPayload["death"] = player["result"]["death"];
-        playerPayload["special"] = player["result"]["special"];
-        playerPayload["signal"] = player["result"]["noroshiTry"];
-        playerPayload["disconnected"] = "no";
-        playerPayload["crown"] = player["crown"] ? "yes" : "no";
-        playerPayload["gears"] = {};
+      if (rule === "TRI_COLOR") {
+        payload["third_team_theme"] = battle["otherTeams"][1]["festTeamName"];
 
-        const Gears = { headGear: "headgear", clothingGear: "clothing", shoesGear: "shoes" };
-        for (const key of Object.keys(Gears)) {
-          const gearPayload = { primary_ability: translateGearAbility(player[key]["primaryGearPower"]["image"]["url"]), secondary_abilities: [] };
-          for (const ability of player[key]["additionalGearPowers"]) {
-            gearPayload.secondary_abilities.push(translateGearAbility(ability["image"]["url"]));
-          }
-          playerPayload["gears"][Gears[key]] = gearPayload;
-        }
-      } else {
-        playerPayload["disconnected"] = "yes";
+        payload["our_team_role"] = battle["myTeam"]["tricolorRole"] === "DEFENSE" ? "defender" : "attacker";
+        payload["their_team_role"] = battle["otherTeams"][0]["tricolorRole"] === "DEFENSE" ? "defender" : "attacker";
+        payload["third_team_role"] = battle["otherTeams"][1]["tricolorRole"] === "DEFENSE" ? "defender" : "attacker";
       }
-
-      teamPayload.push(playerPayload);
     }
 
-    switch (i) {
-      case 0:
-        payload["our_team_players"] = teamPayload;
-        break;
-      case 1:
-        payload["their_team_players"] = teamPayload;
-        break;
-      case 2:
-        payload["third_team_players"] = teamPayload;
-        break;
+    // Anarchy Battles.
+    // TODO: fetch overview.
+    if (mode === "BANKARA") {
+      payload["rank_exp_change"] = battle["bankaraMatch"]["earnedUdemaePoint"];
+
+      try {
+        payload["bankara_power_after"] = battle["bankaraMatch"]["bankaraPower"]["power"];
+      } catch {}
     }
-  }
 
-  // Splatfest Battles.
-  if (mode === "FEST") {
-    payload["our_team_theme"] = battle["myTeam"]["festTeamName"];
-    payload["their_team_theme"] = battle["otherTeams"][0]["festTeamName"];
-    switch (battle["festMatch"]["dragonMatchType"]) {
-      case "DECUPLE":
-        payload["fest_dragon"] = "10x";
-        break;
-      case "DRAGON":
-        payload["fest_dragon"] = "100x";
-        break;
-      case "DOUBLE_DRAGON":
-        payload["fest_dragon"] = "333x";
-        break;
+    // X Battles.
+    // TODO: fetch overview.
+    if (mode === "X_MATCH") {
+      if (battle["xMatch"]["lastXPower"]) {
+        payload["x_power_before"] = battle["xMatch"]["lastXPower"];
+      }
     }
-    payload["clout_change"] = battle["festMatch"]["contribution"];
-    payload["fest_power"] = battle["festMatch"]["myFestPower"];
 
-    if (rule === "TRI_COLOR") {
-      payload["third_team_theme"] = battle["otherTeams"][1]["festTeamName"];
-
-      payload["our_team_role"] = battle["myTeam"]["tricolorRole"] === "DEFENSE" ? "defender" : "attacker";
-      payload["their_team_role"] = battle["otherTeams"][0]["tricolorRole"] === "DEFENSE" ? "defender" : "attacker";
-      payload["third_team_role"] = battle["otherTeams"][1]["tricolorRole"] === "DEFENSE" ? "defender" : "attacker";
+    // Challenges.
+    if (mode === "LEAGUE") {
+      payload["event"] = battle["leagueMatch"]["leagueMatchEvent"]["id"];
+      payload["event_power"] = battle["leagueMatch"]["myLeaguePower"];
     }
-  }
 
-  // Anarchy Battles.
-  // TODO: fetch overview.
-  if (mode === "BANKARA") {
-    payload["rank_exp_change"] = battle["bankaraMatch"]["earnedUdemaePoint"];
-
-    try {
-      payload["bankara_power_after"] = battle["bankaraMatch"]["bankaraPower"]["power"];
-    } catch {}
-  }
-
-  // X Battles.
-  // TODO: fetch overview.
-  if (mode === "X_MATCH") {
-    if (battle["xMatch"]["lastXPower"]) {
-      payload["x_power_before"] = battle["xMatch"]["lastXPower"];
+    // Medals.
+    const medals = [];
+    for (const medal of battle["awards"]) {
+      medals.push(medal["name"]);
     }
+    payload["medals"] = medals;
+
+    payload["automated"] = "yes";
+    payload["splatnet_json"] = JSON.stringify(battle);
+
+    // Upload to stat.ink.
+    await upload("battle", id, payload);
   }
-
-  // Challenges.
-  if (mode === "LEAGUE") {
-    payload["event"] = battle["leagueMatch"]["leagueMatchEvent"]["id"];
-    payload["event_power"] = battle["leagueMatch"]["myLeaguePower"];
-  }
-
-  // Medals.
-  const medals = [];
-  for (const medal of battle["awards"]) {
-    medals.push(medal["name"]);
-  }
-  payload["medals"] = medals;
-
-  payload["automated"] = "yes";
-  payload["splatnet_json"] = JSON.stringify(battle);
-
-  // Upload to stat.ink.
-  await upload("battle", id, payload);
 }
 
 function parseBulletToken() {
@@ -484,6 +497,13 @@ function translateGearAbility(url) {
       return Abilities[key];
     }
   }
+}
+
+async function getUploaded(path) {
+  const req = new Request(`https://stat.ink/api/v3/${path}/uuid-list`);
+  req.headers = { Authorization: `Bearer ${API_KEY}` };
+  const json = await req.loadJSON();
+  return json;
 }
 
 async function upload(path, id, payload) {
