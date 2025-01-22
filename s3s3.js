@@ -19,7 +19,7 @@ const TEST_MODE = false;
 
 // Check update.
 const A_VERSION = "0.0.1";
-checkUpdate();
+await checkUpdate();
 
 // Prepare and configuration check.
 if (API_KEY.length !== 43) {
