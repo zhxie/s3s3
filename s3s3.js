@@ -70,7 +70,7 @@ for (const group of battleGroups) {
   for (const node of battleNodes) {
     const id = node["id"];
     console.log(`Battle ID: ${id}`);
-    const uuid = await generateUuid5("b3a2dbf5-2c09-4792-b78c-00b548b70aeb", Data.fromBase64String(id).toRawString().slice(-52));
+    const uuid = generateUuidV5("b3a2dbf5-2c09-4792-b78c-00b548b70aeb", Data.fromBase64String(id).toRawString().slice(-52));
     if (uploadedBattleIds.includes(uuid)) {
       console.log("Omit");
       continue;
@@ -372,7 +372,7 @@ for (const group of jobGroups) {
   for (const node of jobNodes) {
     const id = node["id"];
     console.log(`Job ID: ${id}`);
-    const uuid = await generateUuid5("f1911910-605e-11ed-a622-7085c2057a9d", Data.fromBase64String(id).toRawString());
+    const uuid = generateUuidV5("f1911910-605e-11ed-a622-7085c2057a9d", Data.fromBase64String(id).toRawString());
     if (uploadedJobIds.includes(uuid)) {
       console.log("Omit");
       continue;
@@ -738,11 +738,102 @@ async function getUploaded(path) {
   return json;
 }
 
-async function generateUuid5(namespace, name) {
-  const req = new Request(`https://www.uuidtools.com/api/generate/v5/namespace/${namespace}/name/${name}`);
-  const json = await req.loadJSON();
-  const uuid = json[0];
-  console.log(`UUID: ${uuid}`);
+function generateUuidV5(namespace, name) {
+  function sha1(message) {
+    function rotateLeft(n, s) {
+      return (n << s) | (n >>> (32 - s));
+    }
+
+    const length = message.length * 8;
+    const words = [];
+    for (let i = 0; i < message.length; i++) {
+      words[i >> 2] |= message[i] << (24 - (i % 4) * 8);
+    }
+    words[length >> 5] |= 0x80 << (24 - (length % 32));
+    words[(((length + 64) >> 9) << 4) + 15] = length;
+
+    let h0 = 0x67452301;
+    let h1 = 0xefcdab89;
+    let h2 = 0x98badcfe;
+    let h3 = 0x10325476;
+    let h4 = 0xc3d2e1f0;
+
+    for (let i = 0; i < words.length; i += 16) {
+      const w = new Array(80);
+      for (let t = 0; t < 16; t++) {
+        w[t] = words[i + t] || 0;
+      }
+      for (let t = 16; t < 80; t++) {
+        w[t] = rotateLeft(w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16], 1);
+      }
+
+      let a = h0,
+        b = h1,
+        c = h2,
+        d = h3,
+        e = h4;
+
+      for (let t = 0; t < 80; t++) {
+        let f, k;
+        if (t < 20) {
+          f = (b & c) | (~b & d);
+          k = 0x5a827999;
+        } else if (t < 40) {
+          f = b ^ c ^ d;
+          k = 0x6ed9eba1;
+        } else if (t < 60) {
+          f = (b & c) | (b & d) | (c & d);
+          k = 0x8f1bbcdc;
+        } else {
+          f = b ^ c ^ d;
+          k = 0xca62c1d6;
+        }
+
+        const temp = (rotateLeft(a, 5) + f + e + k + w[t]) >>> 0;
+        e = d;
+        d = c;
+        c = rotateLeft(b, 30);
+        b = a;
+        a = temp;
+      }
+
+      h0 = (h0 + a) >>> 0;
+      h1 = (h1 + b) >>> 0;
+      h2 = (h2 + c) >>> 0;
+      h3 = (h3 + d) >>> 0;
+      h4 = (h4 + e) >>> 0;
+    }
+
+    const hash = new Uint8Array(20);
+    [h0, h1, h2, h3, h4].forEach((h, i) => {
+      hash[i * 4 + 0] = (h >>> 24) & 0xff;
+      hash[i * 4 + 1] = (h >>> 16) & 0xff;
+      hash[i * 4 + 2] = (h >>> 8) & 0xff;
+      hash[i * 4 + 3] = h & 0xff;
+    });
+    return hash;
+  }
+
+  const namespaceBytes = namespace
+    .replace(/-/g, "")
+    .match(/.{1,2}/g)
+    .map((byte) => parseInt(byte, 16));
+  const nameBytes = Array.from(name).map((e) => e.charCodeAt(0));
+  const combinedBytes = new Uint8Array(namespaceBytes.length + nameBytes.length);
+
+  combinedBytes.set(namespaceBytes);
+  combinedBytes.set(nameBytes, namespaceBytes.length);
+
+  const hashBytes = sha1(combinedBytes);
+  const uuidBytes = hashBytes.slice(0, 16);
+
+  uuidBytes[6] = (uuidBytes[6] & 0x0f) | 0x50;
+  uuidBytes[8] = (uuidBytes[8] & 0x3f) | 0x80;
+
+  const hex = Array.from(uuidBytes)
+    .map((e) => e.toString(16).padStart(2, "0"))
+    .join("");
+  const uuid = `${hex.substr(0, 8)}-${hex.substr(8, 4)}-${hex.substr(12, 4)}-${hex.substr(16, 4)}-${hex.substr(20)}`;
   return uuid;
 }
 
