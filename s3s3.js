@@ -681,21 +681,22 @@ function parseBulletToken() {
 }
 
 async function checkUpdate() {
-  const req = new Request("https://raw.githubusercontent.com/zhxie/s3s3/master/s3s3.js");
-  const str = await req.loadString();
-  const re = /A_VERSION = "([\d.]*)"/g;
-  const match = re.exec(str);
-  const version = match?.[1] ?? "";
-  console.log(`s3s3 version: ${version}`);
+  try {
+    const req = new Request("https://raw.githubusercontent.com/zhxie/s3s3/master/s3s3.js");
+    const str = await req.loadString();
+    const re = /A_VERSION = "([\d.]*)"/g;
+    const match = re.exec(str);
+    const version = match?.[1] ?? "";
+    console.log(`s3s3 version: ${version}`);
 
-  if (version !== "" && version !== A_VERSION) {
-    let alert = new Alert();
-    alert.title = "New Version Available";
-    alert.message = `There is a new version (${version}) of s3s3. Please update s3s3 to the latest version as soon as possible.`;
-    alert.addCancelAction("OK");
-    await alert.present();
-  }
-  return version;
+    if (version !== "" && version !== A_VERSION) {
+      let alert = new Alert();
+      alert.title = "New Version Available";
+      alert.message = `There is a new version (${version}) of s3s3. Please update s3s3 to the latest version as soon as possible.`;
+      alert.addCancelAction("OK");
+      await alert.present();
+    }
+  } catch {}
 }
 
 async function updateSplatnetVersion() {
