@@ -359,6 +359,301 @@ for (const group of battleGroups) {
   }
 }
 
+// Fetch uploaded jobs.
+const uploadedJobIds = await getUploaded("salmon");
+
+// Fetch latest jobs.
+const jobData = await fetchGraphQl("0f8c33970a425683bb1bdecca50a0ca4fb3c3641c0b2a1237aedfde9c0cb2b8f", {});
+const jobGroups = jobData["coopResult"]["historyGroups"]["nodes"];
+console.log(`Job groups: ${jobGroups.length}`);
+for (const group of jobGroups) {
+  const jobNodes = group["historyDetails"]["nodes"];
+  console.log(`Job nodes: ${jobNodes.length}`);
+  for (const node of jobNodes) {
+    const id = node["id"];
+    console.log(`Job ID: ${id}`);
+    const uuid = await generateUuid5("f1911910-605e-11ed-a622-7085c2057a9d", Data.fromBase64String(id).toRawString());
+    if (uploadedJobIds.includes(uuid)) {
+      console.log("Omit");
+      continue;
+    }
+
+    const data = await fetchGraphQl("f2d55873a9281213ae27edc171e2b19131b3021a2ae263757543cdd3bf015cc8", { coopHistoryDetailId: id });
+
+    // Format payload for job.
+    const job = data["coopHistoryDetail"];
+    const payload = {};
+
+    // UUID.
+    payload["uuid"] = uuid;
+
+    // Rule.
+    const rule = job["rule"];
+    switch (rule) {
+      case "PRIVATE_CUSTOM":
+      case "PRIVATE_SCENARIO":
+        payload["private"] = "yes";
+        break;
+      default:
+        if (job["jobPoint"] === null) {
+          payload["private"] = "yes";
+        } else {
+          payload["private"] = "no";
+        }
+        break;
+    }
+    payload["big_run"] = rule === "BIG_RUN" ? "yes" : "no";
+    payload["eggstra_work"] = rule === "TEAM_CONTEST" ? "yes" : "no";
+
+    // Stage.
+    payload["stage"] = decodeBase64Index(job["coopStage"]["id"]);
+
+    // Basic info.
+    if (rule !== "TEAM_CONTEST") {
+      payload["danger_rate"] = job["dangerRate"] * 100;
+    }
+    payload["king_smell"] = job["smellMeter"];
+    payload["job_score"] = job["jobScore"];
+    payload["job_rate"] = job["jobRate"];
+    payload["job_bonus"] = job["jobBonus"];
+    payload["job_point"] = job["jobPoint"];
+
+    // Wave.
+    const wavesCleared = job["resultWave"] - 1;
+    const maxWaves = rule === "TEAM_CONTEST" ? 5 : 3;
+    payload["clear_waves"] = wavesCleared === -1 ? maxWaves : wavesCleared;
+    if (payload["clear_waves"] < 0) {
+      payload["clear_waves"] = null;
+    } else if (payload["clear_waves"] !== maxWaves) {
+      const lastWave = job["waveResults"][payload["clear_waves"]];
+      if (lastWave["teamDeliverCount"] >= lastWave["deliverNorm"]) {
+        payload["fail_reason"] = "wipe_out";
+      }
+    }
+
+    // Xtrawave.
+    if (job["bossResult"]) {
+      payload["king_salmonid"] = decodeBase64Index(job["bossResult"]["boss"]["id"]);
+      payload["clear_extra"] = job["bossResult"]["hasDefeatBoss"] ? "yes" : "no";
+    }
+
+    // Title.
+    if (payload["private"] !== "yes" && rule !== "TEAM_CONTEST") {
+      payload["title_after"] = decodeBase64Index(job["afterGrade"]["id"]);
+      payload["title_exp_after"] = job["afterGradePoint"];
+    }
+
+    // Eggs.
+    let goldenEggs = 0;
+    let powerEggs = job["myResult"]["deliverCount"];
+    for (const player in job["memberResults"]) {
+      powerEggs += player["deliverCount"];
+    }
+    for (const wave of job["waveResults"]) {
+      goldenEggs += wave["teamDeliverCount"] ?? 0;
+    }
+    payload["golden_eggs"] = goldenEggs;
+    payload["power_eggs"] = powerEggs;
+
+    // Scales.
+    if (job["scale"]) {
+      payload["gold_scale"] = job["scale"]["gold"];
+      payload["silver_scale"] = job["scale"]["silver"];
+      payload["bronze_scale"] = job["scale"]["bronze"];
+    }
+
+    // Players.
+    payload["players"] = [];
+    const memberResults = [job["myResult"], ...job["memberResults"]];
+    for (let i = 0; i < memberResults.length; i++) {
+      const player = memberResults[i];
+      const playerPayload = {};
+      playerPayload["me"] = i === 0 ? "yes" : "no";
+      playerPayload["name"] = player["player"]["name"];
+      playerPayload["number"] = player["player"]["nameId"];
+      playerPayload["splashtag_title"] = player["player"]["byname"];
+      playerPayload["golden_eggs"] = player["goldenDeliverCount"];
+      playerPayload["golden_assist"] = player["goldenAssistCount"];
+      playerPayload["power_eggs"] = player["deliverCount"];
+      playerPayload["rescue"] = player["rescueCount"];
+      playerPayload["rescued"] = player["rescuedCount"];
+      playerPayload["defeat_boss"] = player["defeatEnemyCount"];
+      playerPayload["species"] = player["player"]["species"].toLowerCase();
+
+      if (!playerPayload["golden_eggs"] && !playerPayload["power_eggs"] && !playerPayload["rescue"] && !playerPayload["rescued"] && !playerPayload["defeat_boss"]) {
+        playerPayload["disconnected"] = "yes";
+      } else {
+        playerPayload["disconnected"] = "no";
+      }
+
+      playerPayload["uniform"] = decodeBase64Index(player["player"]["uniform"]["id"]);
+
+      if (player["specialWeapon"]) {
+        const SpecialWeapons = {
+          20006: "nicedama",
+          20007: "hopsonar",
+          20009: "megaphone51",
+          20010: "jetpack",
+          20012: "kanitank",
+          20013: "sameride",
+          20014: "tripletornado",
+          20017: "teioika",
+          20018: "ultra_chakuchi",
+        };
+        const specialId = player["specialWeapon"]["weaponId"];
+        playerPayload["special"] = SpecialWeapons[specialId];
+      }
+
+      playerPayload["weapons"] = player["weapons"].map((weapon) => translateWeapon(weapon["image"]["url"]));
+      for (const weapon of player["weapons"]) {
+        if (weapon["image"]["url"].includes("473fffb2442075078d8bb7125744905abdeae651b6a5b7453ae295582e45f7d1")) {
+        }
+      }
+
+      payload["players"].push(playerPayload);
+    }
+
+    // Waves.
+    payload["waves"] = [];
+    for (let i = 0; i < job["waveResults"].length; i++) {
+      const wave = job["waveResults"][i];
+      const wavePayload = {};
+      switch (wave["waterLevel"]) {
+        case 0:
+          wavePayload["tide"] = "low";
+          break;
+        case 1:
+          wavePayload["tide"] = "normal";
+          break;
+        case 2:
+          wavePayload["tide"] = "high";
+          break;
+      }
+      wavePayload["golden_quota"] = wave["deliverNorm"];
+      wavePayload["golden_delivered"] = wave["teamDeliverCount"];
+      wavePayload["golden_appearances"] = wave["goldenPopCount"];
+
+      if (rule === "TEAM_CONTEST") {
+        let dangerRate = 60;
+        if (i > 0) {
+          const prev = payload["waves"][payload["waves"].length - 1];
+          dangerRate = prev["danger_rate"];
+          const quota = prev["golden_quota"];
+          const delivered = prev["golden_delivered"];
+          switch (payload["players"].length) {
+            case 1:
+              if (delivered >= quota * 2) {
+                dangerRate += 10;
+              } else if (delivered >= quota * 1.5) {
+                dangerRate += 5;
+              }
+              break;
+            case 2:
+              if (delivered >= quota * 2) {
+                dangerRate += 20;
+              } else if (delivered >= quota * 1.5) {
+                dangerRate += 10;
+              }
+              break;
+            case 3:
+              if (delivered >= quota * 2) {
+                dangerRate += 40;
+              } else if (delivered >= quota * 1.5) {
+                dangerRate += 20;
+              }
+              break;
+            case 4:
+              if (delivered >= quota * 2) {
+                dangerRate += 60;
+              } else if (delivered >= quota * 1.5) {
+                dangerRate += 30;
+              }
+              break;
+          }
+          wavePayload["danger_rate"] = dangerRate;
+        }
+      }
+
+      if (wave["eventWave"]) {
+        const Events = { 1: "rush", 2: "goldie_seeking", 3: "the_griller", 4: "the_mothership", 5: "fog", 6: "cohock_charge", 7: "giant_tornado", 8: "mudmouth_eruption" };
+        const eventId = decodeBase64Index(wave["eventWave"]["id"]);
+        wavePayload["event"] = Events[eventId];
+      }
+
+      const SpecialWeapons = {
+        20006: "nicedama",
+        20007: "hopsonar",
+        20009: "megaphone51",
+        20010: "jetpack",
+        20012: "kanitank",
+        20013: "sameride",
+        20014: "tripletornado",
+        20017: "teioika",
+        20018: "ultra_chakuchi",
+      };
+      const SpecialWeaponUsage = {
+        nicedama: 0,
+        hopsonar: 0,
+        megaphone51: 0,
+        jetpack: 0,
+        kanitank: 0,
+        sameride: 0,
+        tripletornado: 0,
+        teioika: 0,
+        ultra_chakuchi: 0,
+      };
+      for (const specialWeapon of wave["specialWeapons"]) {
+        const id = decodeBase64Index(specialWeapon["id"]);
+        const key = SpecialWeapons[id];
+        SpecialWeaponUsage[key]++;
+      }
+      wavePayload["special_uses"] = SpecialWeaponUsage;
+
+      payload["waves"].push(wavePayload);
+    }
+
+    // Boss Salmonid.
+    const BossSalmonids = {
+      4: "bakudan",
+      5: "katapad",
+      6: "teppan",
+      7: "hebi",
+      8: "tower",
+      9: "mogura",
+      10: "koumori",
+      11: "hashira",
+      12: "diver",
+      13: "tekkyu",
+      14: "nabebuta",
+      15: "kin_shake",
+      17: "grill",
+      20: "doro_shake",
+    };
+    payload["bosses"] = {};
+    for (const result of job["enemyResults"]) {
+      const id = decodeBase64Index(result["enemy"]["id"]);
+      const key = BossSalmonids[id];
+      payload["bosses"][key] = {
+        appearances: result["popCount"],
+        defeated: result["teamDefeatCount"],
+        defeated_by_me: result["defeatCount"],
+      };
+    }
+
+    // Time.
+    payload["start_at"] = Math.floor(new Date(job["playedTime"]).valueOf() / 1000);
+
+    payload["automated"] = "yes";
+    payload["splatnet_json"] = JSON.stringify(job);
+
+    // Upload to stat.ink.
+    const url = await upload("salmon", id, payload);
+    if (url) {
+      scheduleNotification(url);
+    }
+  }
+}
+
 let alert = new Alert();
 alert.title = "Uploaded Successfully";
 alert.message = "s3s3 has uploaded your results to stat.ink.";
@@ -495,8 +790,8 @@ function decodeBase64Index(b64Str) {
   let str = Data.fromBase64String(b64Str).toRawString();
   str = str.replaceAll("VsStage-", "");
   str = str.replaceAll("VsMode-", "");
-  str = str.replaceAll("Weapon-", "");
   str = str.replaceAll("SpecialWeapon-", "");
+  str = str.replaceAll("Weapon-", "");
   str = str.replaceAll("CoopStage-", "");
   str = str.replaceAll("CoopGrade-", "");
   str = str.replaceAll("CoopEnemy-", "");
@@ -555,6 +850,89 @@ function translateGearAbility(url) {
   for (const key of Object.keys(Abilities)) {
     if (url.includes(key)) {
       return Abilities[key];
+    }
+  }
+}
+
+function translateWeapon(url) {
+  const Weapons = {
+    "6e58a0747ab899badcb6f351512c6034e0a49bd6453281f32c7f550a2132fd65": 0,
+    "8e134a80cd54f4235329493afd43ff754b367a65e460facfcca862b174754b0e": 10,
+    "25e98eaba1e17308db191b740d9b89e6a977bfcd37c8dc1d65883731c0c72609": 20,
+    "5ec00bcf96c7a3f731d7a2e67f60f802f33d22f07177b94d5905f471b08b629f": 30,
+    "01e8399a3c56707b6e9f7500d3d583ba1d400eec06449d8fe047cda1956a4ccc": 50,
+    e3874d7d504acf89488ad7f68d29a348caea1a41cd43bd9a272069b0c0466570: 40,
+    e6dbf73aa6ff9d1feb61fcabadb2d31e08b228a9736b4f5d8a5baeab9b493255: 60,
+    "5607f7014bbc7339feeb67218c05ef19c7a466152b1bd056a899b955127ea433": 70,
+    fe2b351799aa48fcb48154299ff0ccf0b0413fc291ffc49456e93db29d2f1db5: 80,
+    "035920eb9428955c25aecb8a56c2b1b58f3e322af3657d921db1778de4b80c59": 90,
+    "8034dd1acde77c1a2df32197c12faa5ba1d65b43d008edd1b40f16fa8d106944": 100,
+    "10d4a1584d1428cb164ddfbc5febc9b1e77fd05e2e9ed9de851838a94d202c15": 200,
+    "29ccca01285a04f42dc15911f3cd1ee940f9ca0e94c75ba07378828afb3165c0": 210,
+    "0d2963b386b6da598b8da1087eab3f48b99256e2e6a20fc8bbe53b34579fb338": 220,
+    be8ba95bd3017a83876e7f769ee37ee459ee4b2d6eca03fceeb058c510adbb61: 230,
+    "0a929d514403d07e1543e638141ebace947ffd539f5f766b42f4d6577d40d7b8": 240,
+    "954a5ea059f841fa5f1cd2596bb32f23b3d3b03fc3fa7972077bdbafe6051215": 250,
+    "3f8b7fb5cfa592fd251fe4f5707465e539ed79b8d4ae17df75198fbabec2e88f": 260,
+    "96833fc0f74242cd2bc73b241aab8a00d499ce9f6557722ef6503e12af8979f4": 300,
+    "418d75d9ca0304922f06eff539c511238b143ef8331969e20d54a9560df57d5a": 310,
+    db9f2ff8fab9f74c05c7589d43f132eacbff94154dcc20e09c864fced36d4d95: 400,
+    "29358fd25b6ad1ba9e99f5721f0248af8bde7f1f757d00cbbc7a8a6be02a880d": 1000,
+    "536b28d9dd9fc6633a4bea4a141d63942a0ba3470fc504e5b0d02ee408798a87": 1010,
+    "18fdddee9c918842f076c10f12e46d891aca302d2677bf968ee2fe4e65b831a8": 1020,
+    "8351e99589f03f49b5d681d36b083aaffd9c486a0558ab957ac44b0db0bb58bb": 1030,
+    "137559b59547c853e04c6cc8239cff648d2f6b297edb15d45504fae91dfc9765": 1040,
+    "260428edbf919f5c9e8c8517516d6a7a8133cf7348d216768ab4fb9434053f08": 1100,
+    ce0bb38588e497586a60f16e0aca914f181f42be29953742fd4a55a97e2ebd22: 1110,
+    c1f1f56982bd7d28714615a69da6e33c5157ec22b1c62092ec8d60a67b6b29ef: 1120,
+    "0cdd6036a6677d68bf28e1014b09a6f5a043e969027e532cd008049baace6527": 2000,
+    "3f99800b569e286305669b7ab28dc3ff0f0b1b015600569d5ac30ab8a97047a0": 2010,
+    f6354a66c47ec15517bb457e3c48c97c3ff62d34ff38879dbb3e1665dea1be5a: 2020,
+    ed294b2c7b3111988d577d7efddb9e5e475efc5e0932e5416efedc41fd98eb04: 2030,
+    ebc007b2f27b0813f0c9ce7371bdab78c62e6a05777c928bf34222a79d99de8f: 2040,
+    "9c71334ea792864a00531040e0d05a183512e11277fd1fa681170874ba039268": 2050,
+    "2b349390a464710982d7e1496130898e7b5a66c301aa44fc9e19332d42e360ad": 2060,
+    "082489b182fbbabddde40831dac5867d6acc4778b6a38d8f5c8d445455d638eb": 2070,
+    "4a8bf6b4ad3b2942728bbd270bf64d5848b64f3c843a3b12ef83c0ebb5de1b3d": 3000,
+    f3dbd98d5b0e89f7be7eff25a5c63a06045fe64d8ffd5886e79c855e16791563: 3010,
+    bd2eca9a7b4109c1d96e804c74aaf2ca525011e1348d0b312fe4f034e35e5d4c: 3020,
+    "0199e455872acba1ab8ef0040eca7f41afca48c1f9ad2c5d274323d6dbc49133": 3030,
+    "1e32f5e1e65793585f6423e4fcae1a146a79d2a09e6e15575015af8a2032a4fe": 3040,
+    "1cf241ee28b282db23d25f1cce3d586151b9b67f4ba20cf5e2e74c82e988c352": 3050,
+    "32dbc48e000d5d2015468e1dafc05e7c24581a73e54e758af0c8b9e2db3db550": 4000,
+    fd06f01742a3b25ac57941150b3b81d56633831902f2da1f19a6244f2d8dd6fd: 4010,
+    "34fe0401b6f6a0b09839696fc820ece9570a9d56e3a746b65f0604dec91a9920": 4020,
+    "206dbf3b5dfc9962b6a783acf68a856f0c8fbf0c56257c2ca5c25d63198dd6e1": 4030,
+    be4316928f4b031b470ec2cc2c48fb922a303c882802e32d7fa802249edaa212: 4040,
+    "7f0192b8786a6fa7d5ed993022b1667de2fd90dadd8d34a3a7dff9578d34fa0a": 4050,
+    f1c8fc32bd90fc9258dc17e9f9bcfd5e6498f6e283709bf1896b78193b8e39e9: 5000,
+    b43978029ea582de3aca34549cafd810df20082b94104634093392e11e30d9bd: 5010,
+    "802d3d501738c620b4f709203ccad343490bd3340b2fda21eb38a362320dc6ed": 5020,
+    b8f50833f99b0db251dc1812e5d13df09b393635b9b6bd684525112cbb38e5e4: 5030,
+    e68609e51d30dfb13e1ea996e46995ed1f7cf561caef0fe96314966d0a039109: 5040,
+    d6d8c3bce9bd3934a5900642cb6f87c7e340e39cccfde1f8f28ce17e3a1769b0: 5050,
+    "15d101d0d11acbb8159e2701282879f2617d90c8573fd2f2239807721ff54ca4": 6000,
+    a7b1903741696c0ebeda76c9e16fa0a81ae4e37f5331ad6282fc2be1ae1c1c59: 6010,
+    "7508ba286e5ac5befe63daea807ab54996c3f0ef3577be9ab5d2827c49dedd75": 6020,
+    "1e62c90d72a8c11a91ca85be6fe6a3042514e1d77bd01ed65c22ef8e7256809a": 6030,
+    "676d9f49276f171a93ac06646c0fbdfbeb8c3d0284a057aee306404a6034ffef": 7010,
+    "9baac6cc774d0e6f2ac8f6e217d700e6f1f47320130598c5f1e922210ccdcc89": 7020,
+    "14e5480dcebea47ee9843a1fe5e21f468f0ebc4dbaef04df4ff7930edddd2dac": 7030,
+    ddd2a4258a70cdaf8a1dbc0ded024db497445d71f950fe7645fa8c69a178a082: 8000,
+    "3aa72d418643038a9e3248af734b0d6a0bf3d3bf9793d75912b1b959f93c2258": 8010,
+    "7175449ebf69cd8c6125538e08682750b71f39403dc0ca336d58c64a48c4cc18": 8020,
+    "0962405d6aecff4a075c46e895c42984e33b26c4b2b4b25c5058366db3c35ba4": 20900,
+    ea9dd38bbce1cd8b879f59b5afc97a47d79cd413ad8d2fcbb504a2ac8f01036e: 21900,
+    "5cc158250a207241f51d767a47bbb6139fe1c4fb652cc182b73aac93baa659c5": 22900,
+    bf89bcf3d3a51badd78b436266e6b7927d99ac386e083023df3551da6b39e412: 23900,
+    "411abcfee82b63a97af1613885b90daa449f4a847eff6c1d7f093b705040a9f0": 25900,
+    "3380019464e3111a0f40e633be25f73ad34ec1844d2dc7852a349b29b238932b": 26900,
+    "36e03d8d1e6bc4f7449c5450f4410c6c8449cde0548797d22ab641cd488d2060": 27900,
+    "480bc1dfb0beed1ce4625a6a6b035e4bac711de019bb9b0e5125e4e7e39e0719": 28900,
+  };
+  for (const key of Object.keys(Weapons)) {
+    if (url.includes(key)) {
+      return Weapons[key];
     }
   }
 }
