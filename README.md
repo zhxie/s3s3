@@ -22,11 +22,19 @@ mudmouth://add?name=s3s3&url=https%3A%2F%2Fapi.lp1.av5ja.srv.nintendo.net%2Fapi%
 
 6. Add [s3s3 script for Scriptable](/s3s3.scriptable).
 
-7. Use `s3s3` profile to capture request in Mudmouth.
+   You may find difficulty download `.scriptable` file directly in iOS. It is suggested to download it on your PC/Mac and send it to your iPhone, iPad, or iPod Touch.
 
-8. Tap on the notification when request has been captured by Mudmouth.
+   Then, long press on the Scriptable file and select Share > Scriptable to install the script.
 
-9. Wait `s3s3` script to complete in Scriptable.
+   Alternately, you can also copy the [script](/s3s3.js) directly and add a new script in Scriptable.
+
+7. Use your stat.ink API key to update the `API_KEY` field (line 6) in `s3s3` script.
+
+8. Use `s3s3` profile to capture request in Mudmouth.
+
+9. Tap on the notification when request has been captured by Mudmouth.
+
+10. Wait `s3s3` script to complete in Scriptable.
 
 ## License
 
