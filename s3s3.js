@@ -872,8 +872,7 @@ async function upload(path, id, payload) {
 async function scheduleNotification(url) {
   const notification = new Notification();
   notification.title = "Result Uploaded";
-  notification.subtitle = `New result uploaded to ${url}.`;
-  notification.addAction("Open stat.ink", url);
+  notification.body = `New result uploaded to ${url}.`;
   await notification.schedule();
 }
 
