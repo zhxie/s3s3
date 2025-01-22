@@ -3,7 +3,7 @@
 // あなたのstat.ink APIキー。
 // 您的stat.ink API密钥。
 // 您的stat.ink API密鑰。
-const API_KEY = "";
+const API_KEY = "INPUT_YOUR_TOKEN_HERE";
 // Language used in SplatNet 3. Available values for this configuration option are
 // de-DE, en-GB, en-US, es-ES, es-MX, fr-CA, fr-FR, it-IT, ja-JP, ko-KR, nl-NL, ru-RU, zh-CN and zh-TW.
 // 日本語の場合はja-JPと入力してください。
