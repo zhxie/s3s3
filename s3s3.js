@@ -352,8 +352,21 @@ for (const group of battleGroups) {
     payload["splatnet_json"] = JSON.stringify(battle);
 
     // Upload to stat.ink.
-    await upload("battle", id, payload);
+    const url = await upload("battle", id, payload);
+    if (url) {
+      scheduleNotification(url);
+    }
   }
+}
+
+let alert = new Alert();
+alert.title = "Uploaded Successfully";
+alert.message = "s3s3 has uploaded your results to stat.ink.";
+alert.addAction("Open stat.ink");
+alert.addCancelAction("OK");
+const res = await alert.present();
+if (res === 0) {
+  await Safari.openInApp("https://stat.ink/");
 }
 
 function parseBulletToken() {
@@ -423,12 +436,59 @@ async function fetchGraphQl(hash, variables) {
   return json["data"];
 }
 
+async function getUploaded(path) {
+  const req = new Request(`https://stat.ink/api/v3/${path}/uuid-list`);
+  req.headers = { Authorization: `Bearer ${API_KEY}` };
+  const json = await req.loadJSON();
+  return json;
+}
+
 async function generateUuid5(namespace, name) {
   const req = new Request(`https://www.uuidtools.com/api/generate/v5/namespace/${namespace}/name/${name}`);
   const json = await req.loadJSON();
   const uuid = json[0];
   console.log(`UUID: ${uuid}`);
   return uuid;
+}
+
+async function upload(path, id, payload) {
+  payload["test"] = TEST_MODE ? "yes" : "no";
+  payload["agent"] = "s3s3";
+  payload["agent_version"] = `v${A_VERSION}`;
+
+  const req = new Request(`https://stat.ink/api/v3/${path}`);
+  req.method = "POST";
+  req.headers = { Authorization: `Bearer ${API_KEY}`, "Content-Type": "application/json" };
+  req.body = JSON.stringify(payload);
+  const json = await req.loadJSON();
+  if (json["status"]) {
+    let alert = new Alert();
+    alert.title = "Failed to Upload";
+    alert.message = `s3s3 cannot upload ${id} to stat.ink. ${JSON.stringify(json["message"])}`;
+    alert.addCancelAction("OK");
+    await alert.present();
+  } else if (json["error"]) {
+    let alert = new Alert();
+    alert.title = "Failed to Upload";
+    alert.message = `s3s3 cannot upload ${id} to stat.ink. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${JSON.stringify(json["error"])}`;
+    alert.addAction("Copy to Clipboard");
+    alert.addCancelAction("OK");
+    const res = await alert.present();
+    if (res === 0) {
+      Pasteboard.copy(JSON.stringify(payload));
+    }
+  } else {
+    console.log(`Uploaded to: ${json["url"]}`);
+    return json["url"];
+  }
+}
+
+async function scheduleNotification(url) {
+  const notification = new Notification();
+  notification.title = "Result Uploaded";
+  notification.subtitle = `New result uploaded to ${url}.`;
+  notification.addAction("Open stat.ink", url);
+  await notification.schedule();
 }
 
 function decodeBase64Index(b64Str) {
@@ -496,43 +556,5 @@ function translateGearAbility(url) {
     if (url.includes(key)) {
       return Abilities[key];
     }
-  }
-}
-
-async function getUploaded(path) {
-  const req = new Request(`https://stat.ink/api/v3/${path}/uuid-list`);
-  req.headers = { Authorization: `Bearer ${API_KEY}` };
-  const json = await req.loadJSON();
-  return json;
-}
-
-async function upload(path, id, payload) {
-  payload["test"] = TEST_MODE ? "yes" : "no";
-  payload["agent"] = "s3s3";
-  payload["agent_version"] = `v${A_VERSION}`;
-
-  const req = new Request(`https://stat.ink/api/v3/${path}`);
-  req.method = "POST";
-  req.headers = { Authorization: `Bearer ${API_KEY}`, "Content-Type": "application/json" };
-  req.body = JSON.stringify(payload);
-  const json = await req.loadJSON();
-  if (json["status"]) {
-    let alert = new Alert();
-    alert.title = "Failed to Upload";
-    alert.message = `s3s3 cannot upload ${id} to stat.ink. ${JSON.stringify(json["message"])}`;
-    alert.addCancelAction("OK");
-    await alert.present();
-  } else if (json["error"]) {
-    let alert = new Alert();
-    alert.title = "Failed to Upload";
-    alert.message = `s3s3 cannot upload ${id} to stat.ink. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${JSON.stringify(json["error"])}`;
-    alert.addAction("Copy to Clipboard");
-    alert.addCancelAction("OK");
-    const res = await alert.present();
-    if (res === 0) {
-      Pasteboard.copy(JSON.stringify(payload));
-    }
-  } else {
-    console.log(`Uploaded to: ${json["url"]}`);
   }
 }
