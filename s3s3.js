@@ -12,13 +12,13 @@ const API_KEY = "INPUT_YOUR_TOKEN_HERE";
 const LANG = "en-US";
 
 // Debug configuration. DO NOT EDIT unless you know what you are doing.
-// Designated a bullet token to avoid parsing from arguments.
-const BULLET_TOKEN = "" || parseBulletToken();
+// Set the bullet token manually.
+let BULLET_TOKEN = "";
 // Run in test mode.
 const TEST_MODE = false;
 
 // Check update.
-const A_VERSION = "0.0.1";
+const A_VERSION = "0.1.0";
 await checkUpdate();
 
 // Prepare and configuration check.
@@ -38,7 +38,8 @@ if (!["de-DE", "en-GB", "en-US", "es-ES", "es-MX", "fr-CA", "fr-FR", "it-IT", "j
   await alert.present();
   return;
 }
-if (BULLET_TOKEN.length === 0) {
+BULLET_TOKEN = parseBulletToken();
+if (!BULLET_TOKEN) {
   let alert = new Alert();
   alert.title = "Invalid Bullet Token";
   alert.message = "Your bullet token is invalid. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.";
@@ -664,22 +665,6 @@ if (res === 0) {
   await Safari.openInApp("https://stat.ink/");
 }
 
-function parseBulletToken() {
-  let b64Str = args.queryParameters["requestHeaders"].replaceAll("-", "+").replaceAll("_", "/");
-  if (b64Str.length % 4 !== 0) {
-    for (let i = 0; i < 4 - (b64Str.length % 4); i++) {
-      b64Str = b64Str + "=";
-    }
-  }
-  const data = Data.fromBase64String(b64Str);
-  const str = data.toRawString();
-  const re = /Authorization: Bearer (.*)\r\n/g;
-  const match = re.exec(str);
-  const token = match?.[1] ?? "";
-  console.log(`Bullet token: ${token}`);
-  return token;
-}
-
 async function checkUpdate() {
   try {
     const req = new Request("https://raw.githubusercontent.com/zhxie/s3s3/master/s3s3.js");
@@ -697,6 +682,35 @@ async function checkUpdate() {
       await alert.present();
     }
   } catch {}
+}
+
+function parseBulletToken() {
+  if (BULLET_TOKEN) {
+    console.log("Use manually set bullet token");
+    return BULLET_TOKEN;
+  }
+  let token;
+  if (args.queryParameters["requestHeaders"]) {
+    console.log("Use bullet token from query");
+    let b64Str = args.queryParameters["requestHeaders"].replaceAll("-", "+").replaceAll("_", "/");
+    if (b64Str.length % 4 !== 0) {
+      for (let i = 0; i < 4 - (b64Str.length % 4); i++) {
+        b64Str = b64Str + "=";
+      }
+    }
+    const data = Data.fromBase64String(b64Str);
+    const str = data.toRawString();
+    const re = /Authorization: Bearer (.*)\r\n/g;
+    const match = re.exec(str);
+    token = match?.[1] ?? "";
+    Keychain.set("bulletToken", token);
+  } else if (Keychain.contains("bulletToken")) {
+    console.log("Use bullet token from keychain");
+    token = Keychain.get("bulletToken");
+  }
+
+  console.log(`Bullet token: ${token}`);
+  return token;
 }
 
 async function updateSplatnetVersion() {
