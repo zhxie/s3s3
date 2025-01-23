@@ -28,13 +28,11 @@ mudmouth://add?name=s3s3&url=https%3A%2F%2Fapi.lp1.av5ja.srv.nintendo.net%2Fapi%
 
    Alternately, you can also copy the [script](/s3s3.js) directly and add a new script in Scriptable.
 
-7. Use your stat.ink API key to update the `API_KEY` field (line 6) in `s3s3` script.
+7. Use `s3s3` profile to capture request in Mudmouth.
 
-8. Use `s3s3` profile to capture request in Mudmouth.
+8. Tap on the notification when request has been captured by Mudmouth.
 
-9. Tap on the notification when request has been captured by Mudmouth.
-
-10. Wait `s3s3` script to complete in Scriptable.
+9. Wait `s3s3` script to complete in Scriptable.
 
 ## License
 

@@ -1,20 +1,14 @@
 // Configuration.
-// Your stat.ink API key.
-// あなたのstat.ink APIキー。
-// 您的stat.ink API密钥。
-// 您的stat.ink API密鑰。
-const API_KEY = "INPUT_YOUR_TOKEN_HERE";
-// Language used in SplatNet 3. Available values for this configuration option are
-// de-DE, en-GB, en-US, es-ES, es-MX, fr-CA, fr-FR, it-IT, ja-JP, ko-KR, nl-NL, ru-RU, zh-CN and zh-TW.
-// 日本語の場合はja-JPと入力してください。
-// 如果您使用简体中文，请填写zh-CN。
-// 如果您使用繁體中文，請填寫zh-TW。
-const LANG = "en-US";
+// Your stat.ink API key. You can get your API key in https://stat.ink/profile.
+let API_KEY = "";
+// Language used in SplatNet 3.
+// Available values for the option are de-DE, en-GB, en-US, es-ES, es-MX, fr-CA, fr-FR, it-IT, ja-JP, ko-KR, nl-NL, ru-RU, zh-CN and zh-TW.
+let LANG = "";
+// Your bullet token.
+let BULLET_TOKEN = "";
 
 // Debug configuration. DO NOT EDIT unless you know what you are doing.
-// Set the bullet token manually.
-let BULLET_TOKEN = "";
-// Run in test mode.
+// Run in the test mode.
 const TEST_MODE = false;
 
 // Check update.
@@ -22,8 +16,26 @@ const VERSION = "0.1.0";
 await checkUpdate();
 
 // Prepare and configuration check.
+if (API_KEY) {
+  console.log("Use manually set bullet token");
+  Keychain.set("apiKey", API_KEY);
+} else if (Keychain.contains("apiKey")) {
+  console.log("Use API key from keychain");
+  API_KEY = Keychain.get("apiKey");
+} else {
+  const alert = new Alert();
+  alert.title = "Input your stat.ink API Key";
+  alert.message = "You can get your API key in https://stat.ink/profile.";
+  alert.addTextField();
+  alert.addCancelAction("OK");
+  await alert.present();
+  API_KEY = alert.textFieldValue(0);
+  Keychain.set("apiKey", API_KEY);
+}
 if (API_KEY.length !== 43) {
-  let alert = new Alert();
+  Keychain.remove("apiKey");
+
+  const alert = new Alert();
   alert.title = "Invalid stat.ink API Key";
   alert.message = "Your stat.ink API key is invalid. You can get your API key in https://stat.ink/profile.";
   alert.addAction("Open stat.ink Profile");
@@ -34,17 +46,110 @@ if (API_KEY.length !== 43) {
   }
   return;
 }
+if (LANG) {
+  console.log("Use manually set language");
+  Keychain.set("lang", LANG);
+} else if (Keychain.contains("lang")) {
+  console.log("Use language from keychain");
+  LANG = Keychain.get("lang");
+} else {
+  const alert = new Alert();
+  alert.title = "Select Your Language";
+  alert.addAction("Deutsch");
+  alert.addAction("English (UK)");
+  alert.addAction("English (United States)");
+  alert.addAction("Español");
+  alert.addAction("Español (México)");
+  alert.addAction("Français (Canada)");
+  alert.addAction("Français (France)");
+  alert.addAction("Italiano");
+  alert.addAction("日本語");
+  alert.addAction("한국어");
+  alert.addAction("Nederlands");
+  alert.addAction("Русский язык");
+  alert.addAction("简体中文");
+  alert.addAction("繁體中文");
+  const res = await alert.present();
+  switch (res) {
+    case 0:
+      LANG = "de-DE";
+      break;
+    case 1:
+      LANG = "en-GB";
+      break;
+    case 2:
+      LANG = "en-US";
+      break;
+    case 3:
+      LANG = "es-ES";
+      break;
+    case 4:
+      LANG = "es-MX";
+      break;
+    case 5:
+      LANG = "fr-CA";
+      break;
+    case 6:
+      LANG = "fr-FR";
+      break;
+    case 7:
+      LANG = "it-IT";
+      break;
+    case 8:
+      LANG = "ja-JP";
+      break;
+    case 9:
+      LANG = "ko-KR";
+      break;
+    case 10:
+      LANG = "nl-NL";
+      break;
+    case 11:
+      LANG = "ru-RU";
+      break;
+    case 12:
+      LANG = "zh-CN";
+      break;
+    case 13:
+      LANG = "zh-TW";
+      break;
+  }
+  if (LANG) {
+    Keychain.set("lang", LANG);
+  }
+}
 if (!["de-DE", "en-GB", "en-US", "es-ES", "es-MX", "fr-CA", "fr-FR", "it-IT", "ja-JP", "ko-KR", "nl-NL", "ru-RU", "zh-CN", "zh-TW"].includes(LANG)) {
-  let alert = new Alert();
+  Keychain.remove("lang");
+
+  const alert = new Alert();
   alert.title = "Invalid Language";
   alert.message = "Your language is invalid. Please check your configuration.";
   alert.addCancelAction("Quit");
   await alert.present();
   return;
 }
-BULLET_TOKEN = parseBulletToken();
+if (BULLET_TOKEN) {
+  console.log("Use manually set bullet token");
+} else if (args.queryParameters["requestHeaders"]) {
+  console.log("Use bullet token from query");
+  let b64Str = args.queryParameters["requestHeaders"].replaceAll("-", "+").replaceAll("_", "/");
+  if (b64Str.length % 4 !== 0) {
+    for (let i = 0; i < 4 - (b64Str.length % 4); i++) {
+      b64Str = b64Str + "=";
+    }
+  }
+  const data = Data.fromBase64String(b64Str);
+  const str = data.toRawString();
+  const re = /Authorization: Bearer (.*)\r\n/g;
+  const match = re.exec(str);
+  BULLET_TOKEN = match?.[1];
+  Keychain.set("bulletToken", token);
+} else if (Keychain.contains("bulletToken")) {
+  console.log("Use bullet token from keychain");
+  BULLET_TOKEN = Keychain.get("bulletToken");
+}
 if (!BULLET_TOKEN) {
-  let alert = new Alert();
+  const alert = new Alert();
   alert.title = "Invalid Bullet Token";
   alert.message = "Your bullet token is invalid. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.";
   alert.addAction("See Instructions");
@@ -55,9 +160,11 @@ if (!BULLET_TOKEN) {
   }
   return;
 }
-const SPLATNET_VERSION = await updateSplatnetVersion();
+
+// Check SplatNet version.
+const SPLATNET_VERSION = await checkSplatnetVersion();
 if (SPLATNET_VERSION.length === 0) {
-  let alert = new Alert();
+  const alert = new Alert();
   alert.title = "Cannot Update SplatNet 3 Version";
   alert.message = "s3s3 cannot update SplatNet 3 version. Please check your internet connectivity.";
   alert.addCancelAction("Quit");
@@ -664,7 +771,7 @@ for (const group of jobGroups) {
 }
 
 // Alert on completion.
-let alert = new Alert();
+const alert = new Alert();
 alert.title = "Uploaded Successfully";
 alert.message = "s3s3 has uploaded your results to stat.ink.";
 alert.addAction("Open stat.ink");
@@ -681,7 +788,7 @@ async function checkUpdate() {
     const version = json[0]["tag_name"].slice(1);
     console.log(`s3s3 version: ${version}`);
     if (version !== VERSION) {
-      let alert = new Alert();
+      const alert = new Alert();
       alert.title = "New Version Available";
       alert.message = `There is a new version (${version}) of s3s3. Please update s3s3 to the latest version as soon as possible.`;
       alert.addCancelAction("OK");
@@ -690,36 +797,7 @@ async function checkUpdate() {
   } catch {}
 }
 
-function parseBulletToken() {
-  if (BULLET_TOKEN) {
-    console.log("Use manually set bullet token");
-    return BULLET_TOKEN;
-  }
-  let token;
-  if (args.queryParameters["requestHeaders"]) {
-    console.log("Use bullet token from query");
-    let b64Str = args.queryParameters["requestHeaders"].replaceAll("-", "+").replaceAll("_", "/");
-    if (b64Str.length % 4 !== 0) {
-      for (let i = 0; i < 4 - (b64Str.length % 4); i++) {
-        b64Str = b64Str + "=";
-      }
-    }
-    const data = Data.fromBase64String(b64Str);
-    const str = data.toRawString();
-    const re = /Authorization: Bearer (.*)\r\n/g;
-    const match = re.exec(str);
-    token = match?.[1] ?? "";
-    Keychain.set("bulletToken", token);
-  } else if (Keychain.contains("bulletToken")) {
-    console.log("Use bullet token from keychain");
-    token = Keychain.get("bulletToken");
-  }
-
-  console.log(`Bullet token: ${token}`);
-  return token;
-}
-
-async function updateSplatnetVersion() {
+async function checkSplatnetVersion() {
   const req = new Request("https://cdn.jsdelivr.net/gh/nintendoapis/nintendo-app-versions/data/splatnet3-app.json");
   const json = await req.loadJSON();
   const version = json["web_app_ver"] ?? "";
@@ -869,13 +947,13 @@ async function upload(path, id, payload) {
   req.body = JSON.stringify(payload);
   const json = await req.loadJSON();
   if (json["status"]) {
-    let alert = new Alert();
+    const alert = new Alert();
     alert.title = "Failed to Upload";
     alert.message = `s3s3 cannot upload ${id} to stat.ink. ${JSON.stringify(json["message"])}`;
     alert.addCancelAction("OK");
     await alert.present();
   } else if (json["error"]) {
-    let alert = new Alert();
+    const alert = new Alert();
     alert.title = "Failed to Upload";
     alert.message = `s3s3 cannot upload ${id} to stat.ink. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${JSON.stringify(json["error"])}`;
     alert.addAction("Copy to Clipboard");
