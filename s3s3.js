@@ -13,7 +13,7 @@ const TEST_MODE = false;
 
 // Check update.
 const VERSION = "0.1.0";
-console.log(`s3s3 v${version}`);
+console.log(`s3s3 v${VERSION}`);
 await checkUpdate();
 
 // Prepare and configuration check.
