@@ -782,8 +782,8 @@ if (res === 0) {
 }
 
 async function checkUpdate() {
+  const req = new Request("https://api.github.com/repos/zhxie/s3s3/releases");
   try {
-    const req = new Request("https://api.github.com/repos/zhxie/s3s3/releases");
     const json = await req.loadJSON();
     const version = json[0]["tag_name"].slice(1);
     console.log(`s3s3 version: ${version}`);
@@ -799,10 +799,19 @@ async function checkUpdate() {
 
 async function checkSplatnetVersion() {
   const req = new Request("https://cdn.jsdelivr.net/gh/nintendoapis/nintendo-app-versions/data/splatnet3-app.json");
-  const json = await req.loadJSON();
-  const version = json["web_app_ver"] ?? "";
-  console.log(`SplatNet version: ${version}`);
-  return version;
+  try {
+    const json = await req.loadJSON();
+    const version = json["web_app_ver"] ?? "";
+    console.log(`SplatNet version: ${version}`);
+    return version;
+  } catch (e) {
+    const alert = new Alert();
+    alert.title = "Cannot Update SplatNet 3 Version";
+    alert.message = "s3s3 cannot update SplatNet 3 version. Please check your internet connectivity.";
+    alert.addCancelAction("Quit");
+    await alert.present();
+    throw e;
+  }
 }
 
 async function fetchGraphQl(hash, variables) {
@@ -826,14 +835,60 @@ async function fetchGraphQl(hash, variables) {
     },
     variables: variables,
   });
-  const json = await req.loadJSON();
-  return json["data"];
+  try {
+    const json = await req.loadJSON();
+    return json["data"];
+  } catch (e) {
+    if (req.response.statusCode === 400) {
+      const alert = new Alert();
+      alert.title = "Failed to Fetch";
+      alert.message = `s3s3 cannot fetch from SplatNet 3. Please file a bug on https://github.com/zhxie/s3s3/issues.`;
+      alert.addCancelAction("Quit");
+      await alert.present();
+    } else if (req.response.statusCode === 401) {
+      const alert = new Alert();
+      alert.title = "Failed to Fetch";
+      alert.message = `s3s3 cannot fetch from SplatNet 3. Your bullet token may be expired. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.`;
+      alert.addAction("See Instructions");
+      alert.addCancelAction("Quit");
+      const res = await alert.present();
+      if (res === 0) {
+        await Safari.openInApp("https://github.com/zhxie/s3s3");
+      }
+    } else {
+      const alert = new Alert();
+      alert.title = "Failed to Fetch";
+      alert.message = `s3s3 cannot fetch from SplatNet 3. Please check your internet connectivity.`;
+      alert.addCancelAction("Quit");
+      await alert.present();
+    }
+    throw e;
+  }
 }
 
 async function getUploaded(path) {
+  let json;
   const req = new Request(`https://stat.ink/api/v3/${path}/uuid-list`);
   req.headers = { Authorization: `Bearer ${API_KEY}` };
-  const json = await req.loadJSON();
+  try {
+    json = await req.loadJSON();
+  } catch (e) {
+    const alert = new Alert();
+    alert.title = "Failed to Get Uploaded List";
+    alert.message = `s3s3 cannot get uploaded list from stat.ink. Please check your internet connectivity.`;
+    alert.addCancelAction("Quit");
+    await alert.present();
+    throw e;
+  }
+
+  if (json["status"]) {
+    const alert = new Alert();
+    alert.title = "Failed to Get Uploaded List";
+    alert.message = `s3s3 cannot get uploaded list from stat.ink. ${JSON.stringify(json["message"])}`;
+    alert.addCancelAction("Quit");
+    await alert.present();
+    throw json["message"];
+  }
   return json;
 }
 
@@ -945,26 +1000,34 @@ async function upload(path, id, payload) {
   req.method = "POST";
   req.headers = { Authorization: `Bearer ${API_KEY}`, "Content-Type": "application/json" };
   req.body = JSON.stringify(payload);
-  const json = await req.loadJSON();
-  if (json["status"]) {
+  try {
+    const json = await req.loadJSON();
+    if (json["status"]) {
+      const alert = new Alert();
+      alert.title = "Failed to Upload";
+      alert.message = `s3s3 cannot upload ${id} to stat.ink. ${JSON.stringify(json["message"])}`;
+      alert.addCancelAction("OK");
+      await alert.present();
+    } else if (json["error"]) {
+      const alert = new Alert();
+      alert.title = "Failed to Upload";
+      alert.message = `s3s3 cannot upload ${id} to stat.ink. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${JSON.stringify(json["error"])}`;
+      alert.addAction("Copy to Clipboard");
+      alert.addCancelAction("OK");
+      const res = await alert.present();
+      if (res === 0) {
+        Pasteboard.copy(JSON.stringify(payload));
+      }
+    } else {
+      console.log(`Uploaded to: ${json["url"]}`);
+      return json["url"];
+    }
+  } catch {
     const alert = new Alert();
     alert.title = "Failed to Upload";
-    alert.message = `s3s3 cannot upload ${id} to stat.ink. ${JSON.stringify(json["message"])}`;
+    alert.message = `s3s3 cannot upload ${id} to stat.ink. Please check your internet connectivity.`;
     alert.addCancelAction("OK");
     await alert.present();
-  } else if (json["error"]) {
-    const alert = new Alert();
-    alert.title = "Failed to Upload";
-    alert.message = `s3s3 cannot upload ${id} to stat.ink. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${JSON.stringify(json["error"])}`;
-    alert.addAction("Copy to Clipboard");
-    alert.addCancelAction("OK");
-    const res = await alert.present();
-    if (res === 0) {
-      Pasteboard.copy(JSON.stringify(payload));
-    }
-  } else {
-    console.log(`Uploaded to: ${json["url"]}`);
-    return json["url"];
   }
 }
 
