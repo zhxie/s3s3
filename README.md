@@ -6,7 +6,7 @@ Since it is the third implementation after [s3s](https://github.com/frozenpandam
 
 ## Usage
 
-1. Prepare your iPhone, iPad, or iPod Touch, which requires iOS 15.5 or later.
+1. Prepare an iPhone, iPad or iPod Touch which requires iOS 15.5 or later.
 
 2. Install [Scriptable](https://apps.apple.com/us/app/scriptable/id1405459188).
 
@@ -22,7 +22,7 @@ mudmouth://add?name=s3s3&url=https%3A%2F%2Fapi.lp1.av5ja.srv.nintendo.net%2Fapi%
 
 6. Download and add [s3s3 script for Scriptable](https://github.com/zhxie/s3s3/releases/latest).
 
-   After downloading the file, long press file and choose Share > Scriptable to install the script.
+   After downloading the file, long press on the file in Files app and choose Share > Scriptable to install the script.
 
    Alternately, you can just copy the [script](/s3s3.js) directly and add a new one in Scriptable.
 
