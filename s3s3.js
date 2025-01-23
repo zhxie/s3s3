@@ -1,4 +1,4 @@
-// Configuration.
+// Configuration. Your do not need to configure them unless you want to override saved configuration.
 // Your stat.ink API key. You can get your API key in https://stat.ink/profile.
 let API_KEY = "";
 // Language used in SplatNet 3.
@@ -13,6 +13,7 @@ const TEST_MODE = false;
 
 // Check update.
 const VERSION = "0.1.0";
+console.log(`s3s3 v${version}`);
 await checkUpdate();
 
 // Prepare and configuration check.
@@ -143,7 +144,7 @@ if (BULLET_TOKEN) {
   const re = /Authorization: Bearer (.*)\r\n/g;
   const match = re.exec(str);
   BULLET_TOKEN = match?.[1];
-  Keychain.set("bulletToken", token);
+  Keychain.set("bulletToken", BULLET_TOKEN);
 } else if (Keychain.contains("bulletToken")) {
   console.log("Use bullet token from keychain");
   BULLET_TOKEN = Keychain.get("bulletToken");
@@ -177,6 +178,7 @@ const uploadedBattleIds = await getUploaded("s3s");
 
 // Fetch latest battles.
 // TODO: fetch the latest 50 battles in each modes.
+let battleIndex = 0;
 const battleData = await fetchGraphQl("b24d22fd6cb251c515c2b90044039698aa27bc1fab15801d83014d919cd45780", {});
 const battleGroups = battleData["latestBattleHistories"]["historyGroups"]["nodes"];
 console.log(`Battle groups: ${battleGroups.length}`);
@@ -184,8 +186,9 @@ for (const group of battleGroups) {
   const battleNodes = group["historyDetails"]["nodes"];
   console.log(`Battle nodes: ${battleNodes.length}`);
   for (const node of battleNodes) {
+    battleIndex++;
     const id = node["id"];
-    console.log(`Battle ID: ${id}`);
+    console.log(`[${battleIndex}] Battle ID: ${id}`);
     const uuid = generateUuidV5("b3a2dbf5-2c09-4792-b78c-00b548b70aeb", Data.fromBase64String(id).toRawString().slice(-52));
     if (uploadedBattleIds.includes(uuid)) {
       console.log("Omit");
@@ -479,6 +482,7 @@ for (const group of battleGroups) {
 const uploadedJobIds = await getUploaded("salmon");
 
 // Fetch latest jobs.
+let jobIndex = 0;
 const jobData = await fetchGraphQl("0f8c33970a425683bb1bdecca50a0ca4fb3c3641c0b2a1237aedfde9c0cb2b8f", {});
 const jobGroups = jobData["coopResult"]["historyGroups"]["nodes"];
 console.log(`Job groups: ${jobGroups.length}`);
@@ -486,8 +490,9 @@ for (const group of jobGroups) {
   const jobNodes = group["historyDetails"]["nodes"];
   console.log(`Job nodes: ${jobNodes.length}`);
   for (const node of jobNodes) {
+    jobIndex++;
     const id = node["id"];
-    console.log(`Job ID: ${id}`);
+    console.log(`[${jobIndex}] Job ID: ${id}`);
     const uuid = generateUuidV5("f1911910-605e-11ed-a622-7085c2057a9d", Data.fromBase64String(id).toRawString());
     if (uploadedJobIds.includes(uuid)) {
       console.log("Omit");
@@ -786,7 +791,7 @@ async function checkUpdate() {
   try {
     const json = await req.loadJSON();
     const version = json[0]["tag_name"].slice(1);
-    console.log(`s3s3 version: ${version}`);
+    console.log(`online s3s3 version: ${version}`);
     if (version !== VERSION) {
       const alert = new Alert();
       alert.title = "New Version Available";
