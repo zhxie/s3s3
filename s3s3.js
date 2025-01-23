@@ -18,7 +18,7 @@ let BULLET_TOKEN = "";
 const TEST_MODE = false;
 
 // Check update.
-const A_VERSION = "0.1.0";
+const VERSION = "0.1.0";
 await checkUpdate();
 
 // Prepare and configuration check.
@@ -26,8 +26,12 @@ if (API_KEY.length !== 43) {
   let alert = new Alert();
   alert.title = "Invalid stat.ink API Key";
   alert.message = "Your stat.ink API key is invalid. You can get your API key in https://stat.ink/profile.";
+  alert.addAction("Open stat.ink Profile");
   alert.addCancelAction("Quit");
-  await alert.present();
+  const res = await alert.present();
+  if (res === 0) {
+    await Safari.openInApp("https://stat.ink/profile");
+  }
   return;
 }
 if (!["de-DE", "en-GB", "en-US", "es-ES", "es-MX", "fr-CA", "fr-FR", "it-IT", "ja-JP", "ko-KR", "nl-NL", "ru-RU", "zh-CN", "zh-TW"].includes(LANG)) {
@@ -43,15 +47,19 @@ if (!BULLET_TOKEN) {
   let alert = new Alert();
   alert.title = "Invalid Bullet Token";
   alert.message = "Your bullet token is invalid. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.";
+  alert.addAction("See Instructions");
   alert.addCancelAction("Quit");
-  await alert.present();
+  const res = await alert.present();
+  if (res === 0) {
+    await Safari.openInApp("https://github.com/zhxie/s3s3");
+  }
   return;
 }
 const SPLATNET_VERSION = await updateSplatnetVersion();
 if (SPLATNET_VERSION.length === 0) {
   let alert = new Alert();
   alert.title = "Cannot Update SplatNet 3 Version";
-  alert.message = "s3s3 cannot update SplatNet 3 version. Please check your internet connectivity, then file a bug on https://github.com/zhxie/s3s3/issues.";
+  alert.message = "s3s3 cannot update SplatNet 3 version. Please check your internet connectivity.";
   alert.addCancelAction("Quit");
   await alert.present();
   return;
@@ -655,6 +663,7 @@ for (const group of jobGroups) {
   }
 }
 
+// Alert on completion.
 let alert = new Alert();
 alert.title = "Uploaded Successfully";
 alert.message = "s3s3 has uploaded your results to stat.ink.";
@@ -667,14 +676,11 @@ if (res === 0) {
 
 async function checkUpdate() {
   try {
-    const req = new Request("https://raw.githubusercontent.com/zhxie/s3s3/master/s3s3.js");
-    const str = await req.loadString();
-    const re = /A_VERSION = "([\d.]*)"/g;
-    const match = re.exec(str);
-    const version = match?.[1] ?? "";
+    const req = new Request("https://api.github.com/repos/zhxie/s3s3/releases");
+    const json = await req.loadJSON();
+    const version = json[0]["tag_name"].slice(1);
     console.log(`s3s3 version: ${version}`);
-
-    if (version !== "" && version !== A_VERSION) {
+    if (version !== VERSION) {
       let alert = new Alert();
       alert.title = "New Version Available";
       alert.message = `There is a new version (${version}) of s3s3. Please update s3s3 to the latest version as soon as possible.`;
@@ -855,7 +861,7 @@ function generateUuidV5(namespace, name) {
 async function upload(path, id, payload) {
   payload["test"] = TEST_MODE ? "yes" : "no";
   payload["agent"] = "s3s3";
-  payload["agent_version"] = `v${A_VERSION}`;
+  payload["agent_version"] = `v${VERSION}`;
 
   const req = new Request(`https://stat.ink/api/v3/${path}`);
   req.method = "POST";
