@@ -1,4 +1,4 @@
-// Configuration. Your do not need to configure them unless you want to override saved configuration.
+// Configuration. You do not need to configure them unless you want to overwrite saved configuration.
 // Your stat.ink API key. You can get your API key in https://stat.ink/profile.
 let API_KEY = "";
 // Language used in SplatNet 3.
