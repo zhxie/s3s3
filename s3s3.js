@@ -157,7 +157,7 @@ if (!BULLET_TOKEN) {
   alert.addCancelAction("Quit");
   const res = await alert.present();
   if (res === 0) {
-    await Safari.openInApp("https://github.com/zhxie/s3s3");
+    await Safari.openInApp("https://github.com/zhxie/s3s3?tab=readme-ov-file#usage");
   }
   return;
 }
@@ -874,7 +874,7 @@ async function fetchGraphQl(hash, variables) {
       alert.addCancelAction("Quit");
       const res = await alert.present();
       if (res === 0) {
-        await Safari.openInApp("https://github.com/zhxie/s3s3");
+        await Safari.openInApp("https://github.com/zhxie/s3s3?tab=readme-ov-file#usage");
       }
     } else {
       const alert = new Alert();

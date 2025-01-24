@@ -16,9 +16,11 @@ Since it is the third implementation after [s3s](https://github.com/frozenpandam
 
 5. Add [s3s3 profile of Mudmouth](mudmouth://add?name=s3s3&url=https%3A%2F%2Fapi.lp1.av5ja.srv.nintendo.net%2Fapi%2Fgraphql&preAction=1&preActionUrlScheme=com.nintendo.znca%3A%2F%2Fznca%2Fgame%2F4834290508791808&postAction=1&postActionUrlScheme=scriptable%3A%2F%2F%2Frun%2Fs3s3%3FopenEditor%3Dtrue).
 
-```
-mudmouth://add?name=s3s3&url=https%3A%2F%2Fapi.lp1.av5ja.srv.nintendo.net%2Fapi%2Fgraphql&preAction=1&preActionUrlScheme=com.nintendo.znca%3A%2F%2Fznca%2Fgame%2F4834290508791808&postAction=1&postActionUrlScheme=scriptable%3A%2F%2F%2Frun%2Fs3s3%3FopenEditor%3Dtrue
-```
+   Copy and paste the following link in Safari.
+
+   ```
+   mudmouth://add?name=s3s3&url=https%3A%2F%2Fapi.lp1.av5ja.srv.nintendo.net%2Fapi%2Fgraphql&preAction=1&preActionUrlScheme=com.nintendo.znca%3A%2F%2Fznca%2Fgame%2F4834290508791808&postAction=1&postActionUrlScheme=scriptable%3A%2F%2F%2Frun%2Fs3s3%3FopenEditor%3Dtrue
+   ```
 
 6. Download and add [s3s3 script for Scriptable](https://github.com/zhxie/s3s3/releases/latest).
 
