@@ -165,21 +165,22 @@ if (!BULLET_TOKEN) {
 // Check SplatNet version.
 const SPLATNET_VERSION = await checkSplatnetVersion();
 if (SPLATNET_VERSION.length === 0) {
-  const alert = new Alert();
-  alert.title = "Cannot Update SplatNet 3 Version";
-  alert.message = "s3s3 cannot update SplatNet 3 version. Please check your internet connectivity.";
-  alert.addCancelAction("Quit");
-  await alert.present();
   return;
 }
 
 // Fetch uploaded battles.
 const uploadedBattleIds = await getUploaded("s3s");
+if (uploadedBattleIds === undefined) {
+  return;
+}
 
 // Fetch latest battles.
 // TODO: fetch the latest 50 battles in each modes.
 let battleIndex = 0;
 const battleData = await fetchGraphQl("b24d22fd6cb251c515c2b90044039698aa27bc1fab15801d83014d919cd45780", {});
+if (battleData === undefined) {
+  return;
+}
 const battleGroups = battleData["latestBattleHistories"]["historyGroups"]["nodes"];
 console.log(`Battle groups: ${battleGroups.length}`);
 for (const group of battleGroups) {
@@ -196,6 +197,9 @@ for (const group of battleGroups) {
     }
 
     const data = await fetchGraphQl("f893e1ddcfb8a4fd645fd75ced173f18b2750e5cfba41d2669b9814f6ceaec46", { vsResultId: id });
+    if (data === undefined) {
+      return;
+    }
 
     // Format payload for battle.
     const battle = data["vsHistoryDetail"];
@@ -480,10 +484,16 @@ for (const group of battleGroups) {
 
 // Fetch uploaded jobs.
 const uploadedJobIds = await getUploaded("salmon");
+if (uploadedJobIds === undefined) {
+  return;
+}
 
 // Fetch latest jobs.
 let jobIndex = 0;
 const jobData = await fetchGraphQl("0f8c33970a425683bb1bdecca50a0ca4fb3c3641c0b2a1237aedfde9c0cb2b8f", {});
+if (jobData === undefined) {
+  return;
+}
 const jobGroups = jobData["coopResult"]["historyGroups"]["nodes"];
 console.log(`Job groups: ${jobGroups.length}`);
 for (const group of jobGroups) {
@@ -500,6 +510,9 @@ for (const group of jobGroups) {
     }
 
     const data = await fetchGraphQl("f2d55873a9281213ae27edc171e2b19131b3021a2ae263757543cdd3bf015cc8", { coopHistoryDetailId: id });
+    if (data === undefined) {
+      return;
+    }
 
     // Format payload for job.
     const job = data["coopHistoryDetail"];
@@ -804,19 +817,22 @@ async function checkUpdate() {
 
 async function checkSplatnetVersion() {
   const req = new Request("https://cdn.jsdelivr.net/gh/nintendoapis/nintendo-app-versions/data/splatnet3-app.json");
+  let version = "";
   try {
     const json = await req.loadJSON();
-    const version = json["web_app_ver"] ?? "";
+    version = json["web_app_ver"] ?? "";
     console.log(`SplatNet version: ${version}`);
     return version;
-  } catch (e) {
+  } catch {}
+
+  if (version.length === 0) {
     const alert = new Alert();
-    alert.title = "Cannot Update SplatNet 3 Version";
-    alert.message = "s3s3 cannot update SplatNet 3 version. Please check your internet connectivity.";
+    alert.title = "Cannot Check SplatNet 3 Version";
+    alert.message = "s3s3 cannot check SplatNet 3 version. Please check your internet connectivity.";
     alert.addCancelAction("Quit");
     await alert.present();
-    throw e;
   }
+  return version;
 }
 
 async function fetchGraphQl(hash, variables) {
@@ -843,7 +859,7 @@ async function fetchGraphQl(hash, variables) {
   try {
     const json = await req.loadJSON();
     return json["data"];
-  } catch (e) {
+  } catch {
     if (req.response.statusCode === 400) {
       const alert = new Alert();
       alert.title = "Failed to Fetch";
@@ -867,7 +883,7 @@ async function fetchGraphQl(hash, variables) {
       alert.addCancelAction("Quit");
       await alert.present();
     }
-    throw e;
+    return undefined;
   }
 }
 
@@ -877,13 +893,13 @@ async function getUploaded(path) {
   req.headers = { Authorization: `Bearer ${API_KEY}` };
   try {
     json = await req.loadJSON();
-  } catch (e) {
+  } catch {
     const alert = new Alert();
     alert.title = "Failed to Get Uploaded List";
     alert.message = `s3s3 cannot get uploaded list from stat.ink. Please check your internet connectivity.`;
     alert.addCancelAction("Quit");
     await alert.present();
-    throw e;
+    return undefined;
   }
 
   if (json["status"]) {
@@ -892,7 +908,7 @@ async function getUploaded(path) {
     alert.message = `s3s3 cannot get uploaded list from stat.ink. ${JSON.stringify(json["message"])}`;
     alert.addCancelAction("Quit");
     await alert.present();
-    throw json["message"];
+    return undefined;
   }
   return json;
 }
