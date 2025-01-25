@@ -800,7 +800,7 @@ async function checkUpdate() {
   try {
     const json = await req.loadJSON();
     const version = json[0]["tag_name"].slice(1);
-    console.log(`online s3s3 version: ${version}`);
+    console.log(`Online s3s3 version: ${version}`);
     if (version !== VERSION) {
       const alert = new Alert();
       alert.title = "New Version Available";
