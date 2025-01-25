@@ -12,7 +12,7 @@ let BULLET_TOKEN = "";
 const TEST_MODE = false;
 
 // Check update.
-const VERSION = "0.1.0";
+const VERSION = "0.1.1";
 console.log(`s3s3 v${VERSION}`);
 await checkUpdate();
 
@@ -134,11 +134,7 @@ if (BULLET_TOKEN) {
 } else if (args.queryParameters["requestHeaders"]) {
   console.log("Use bullet token from query");
   let b64Str = args.queryParameters["requestHeaders"].replaceAll("-", "+").replaceAll("_", "/");
-  if (b64Str.length % 4 !== 0) {
-    for (let i = 0; i < 4 - (b64Str.length % 4); i++) {
-      b64Str = b64Str + "=";
-    }
-  }
+  b64Str = b64Str.padEnd(b64Str.length + (4 - (b64Str.length % 4 || 4)), "=");
   const data = Data.fromBase64String(b64Str);
   const str = data.toRawString();
   const re = /Authorization: Bearer (.*)\r\n/g;
