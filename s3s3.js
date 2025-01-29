@@ -12,8 +12,9 @@ let BULLET_TOKEN = "";
 const TEST_MODE = false;
 
 // Check update.
-const VERSION = "0.1.1";
-console.log(`s3s3 v${VERSION}`);
+// HACK: remain A_VERSION for v0.0.1 compatibility.
+const A_VERSION = "0.1.1";
+console.log(`s3s3 v${A_VERSION}`);
 await checkUpdate();
 
 // Prepare and configuration check.
@@ -801,7 +802,7 @@ async function checkUpdate() {
     const json = await req.loadJSON();
     const version = json[0]["tag_name"].slice(1);
     console.log(`Online s3s3 version: ${version}`);
-    if (version !== VERSION) {
+    if (version !== A_VERSION) {
       const alert = new Alert();
       alert.title = "New Version Available";
       alert.message = `There is a new version (${version}) of s3s3. Please update s3s3 to the latest version as soon as possible.`;
@@ -1011,7 +1012,7 @@ function generateUuidV5(namespace, name) {
 async function upload(path, id, payload) {
   payload["test"] = TEST_MODE ? "yes" : "no";
   payload["agent"] = "s3s3";
-  payload["agent_version"] = `v${VERSION}`;
+  payload["agent_version"] = `v${A_VERSION}`;
 
   const req = new Request(`https://stat.ink/api/v3/${path}`);
   req.method = "POST";
