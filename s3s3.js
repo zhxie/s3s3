@@ -13,7 +13,7 @@ const TEST_MODE = false;
 
 // Check update.
 // HACK: remain A_VERSION for v0.0.1 compatibility.
-const A_VERSION = "0.1.1";
+const A_VERSION = "0.1.2";
 console.log(`s3s3 v${A_VERSION}`);
 const updated = await checkUpdate();
 if (!updated) {
