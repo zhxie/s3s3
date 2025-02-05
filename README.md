@@ -4,6 +4,8 @@ Another script for uploading battles and jobs from SplatNet 3 to [stat.ink](http
 
 Since it is the third implementation after [s3s](https://github.com/frozenpandaman/s3s) and [s3si.ts](https://github.com/spacemeowx2/s3si.ts), so I will just call it s3s3 🤣.
 
+日本語を使用される皆様へ、ハラさんの[こちらの記事](https://note.com/hara_di/n/n11145882121b)を参考にして、s3s3を設定できます。
+
 ## Usage
 
 1. Prepare an iPhone, iPad or iPod Touch which requires iOS 15.5 or later.
