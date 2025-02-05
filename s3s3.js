@@ -15,7 +15,10 @@ const TEST_MODE = false;
 // HACK: remain A_VERSION for v0.0.1 compatibility.
 const A_VERSION = "0.1.1";
 console.log(`s3s3 v${A_VERSION}`);
-await checkUpdate();
+const updated = await checkUpdate();
+if (!updated) {
+  return;
+}
 
 // Prepare and configuration check.
 if (API_KEY) {
@@ -815,10 +818,16 @@ async function checkUpdate() {
       const alert = new Alert();
       alert.title = "New Version Available";
       alert.message = `There is a new version (${version}) of s3s3. Please update s3s3 to the latest version as soon as possible.`;
+      alert.addAction("Update Now");
       alert.addCancelAction("OK");
-      await alert.present();
+      const res = await alert.present();
+      if (res === 0) {
+        await Safari.open("https://github.com/zhxie/s3s3/releases/latest");
+        return false;
+      }
     }
   } catch {}
+  return true;
 }
 
 async function checkSplatnetVersion() {
