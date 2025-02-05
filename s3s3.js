@@ -424,6 +424,15 @@ for (const group of battleGroups) {
         case "DOUBLE_DRAGON":
           payload["fest_dragon"] = "333x";
           break;
+        case "CONCH_SHELL_SCRAMBLE":
+          payload["conch_clash"] = "1x";
+          break;
+        case "CONCH_SHELL_SCRAMBLE_10":
+          payload["conch_clash"] = "10x";
+          break;
+        case "CONCH_SHELL_SCRAMBLE_33":
+          payload["conch_clash"] = "33x";
+          break;
       }
       payload["clout_change"] = battle["festMatch"]["contribution"];
       payload["fest_power"] = battle["festMatch"]["myFestPower"];
