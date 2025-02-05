@@ -6,6 +6,10 @@ let API_KEY = "";
 let LANG = "";
 // Your bullet token.
 let BULLET_TOKEN = "";
+// Your cookie. This field is optional but recommended.
+let COOKIE = "";
+// Your user agent. This field is optional but recommended.
+let USER_AGENT = "";
 
 // Debug configuration. DO NOT EDIT unless you know what you are doing.
 // Run in the test mode.
@@ -140,7 +144,7 @@ if (BULLET_TOKEN) {
   let b64Str = args.queryParameters["requestHeaders"].replaceAll("-", "+").replaceAll("_", "/");
   b64Str = b64Str.padEnd(b64Str.length + (4 - (b64Str.length % 4 || 4)), "=");
   const data = Data.fromBase64String(b64Str);
-  const str = data.toRawString();
+  const str = data.toRawString() + "\r\n";
   const re = /Authorization: Bearer (.*)\r\n/g;
   const match = re.exec(str);
   BULLET_TOKEN = match?.[1];
@@ -160,6 +164,49 @@ if (!BULLET_TOKEN) {
     await Safari.openInApp("https://github.com/zhxie/s3s3?tab=readme-ov-file#usage");
   }
   return;
+}
+if (COOKIE) {
+  console.log("Use manually set cookie");
+} else if (args.queryParameters["requestHeaders"]) {
+  console.log("Use cookie from query");
+  let b64Str = args.queryParameters["requestHeaders"].replaceAll("-", "+").replaceAll("_", "/");
+  b64Str = b64Str.padEnd(b64Str.length + (4 - (b64Str.length % 4 || 4)), "=");
+  const data = Data.fromBase64String(b64Str);
+  const str = data.toRawString() + "\r\n";
+  const re = /Cookie: (.*)\r\n/g;
+  const match = re.exec(str);
+  COOKIE = match?.[1];
+  Keychain.set("cookie", COOKIE);
+} else if (Keychain.contains("cookie")) {
+  console.log("Use cookie from keychain");
+  COOKIE = Keychain.get("cookie");
+}
+if (USER_AGENT) {
+  console.log("Use manually set user agent");
+} else if (args.queryParameters["requestHeaders"]) {
+  console.log("Use user agent from query");
+  let b64Str = args.queryParameters["requestHeaders"].replaceAll("-", "+").replaceAll("_", "/");
+  b64Str = b64Str.padEnd(b64Str.length + (4 - (b64Str.length % 4 || 4)), "=");
+  const data = Data.fromBase64String(b64Str);
+  const str = data.toRawString() + "\r\n";
+  const re = /User-Agent: (.*)\r\n/g;
+  const match = re.exec(str);
+  USER_AGENT = match?.[1];
+  Keychain.set("userAgent", USER_AGENT);
+} else if (Keychain.contains("userAgent")) {
+  console.log("Use user agent from keychain");
+  USER_AGENT = Keychain.get("userAgent");
+}
+if (!COOKIE || !USER_AGENT) {
+  const alert = new Alert();
+  alert.title = "Empty Cookie or User Agent";
+  alert.message = "Your cookie or user agent is empty. Although these fields are optional, ignoring them may lead to potential security risks.";
+  alert.addDestructiveAction("Continue");
+  alert.addCancelAction("Quit");
+  const res = await alert.present();
+  if (res === -1) {
+    return;
+  }
 }
 
 // Check SplatNet version.
@@ -853,14 +900,25 @@ async function checkSplatnetVersion() {
 async function fetchGraphQl(hash, variables) {
   const req = new Request("https://api.lp1.av5ja.srv.nintendo.net/api/graphql");
   req.method = "POST";
-  // TODO: complete headers.
-  // HACK: there are only minimum required headers. Some headers has been removed which may lead to potential issues.
+  // HACK: Some headers can only be fetched from Mudmouth.
   req.headers = {
+    Accept: "*/*",
+    "Accept-Encoding": "gzip, deflate, br",
     "Accept-Language": LANG,
     Authorization: `Bearer ${BULLET_TOKEN}`,
+    Connection: "keep-alive",
+    // Content length is automatically filled.
+    // "Content-Length": 0,
     "Content-Type": "application/json",
-    "X-Requested-With": "com.nintendo.znca",
-    "X-Web-View-Ver": SPLATNET_VERSION,
+    Cookie: COOKIE,
+    Host: "api.lp1.av5ja.srv.nintendo.net",
+    Origin: "https://api.lp1.av5ja.srv.nintendo.net",
+    Referer: "https://api.lp1.av5ja.srv.nintendo.net/",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+    "User-Agent": USER_AGENT,
+    "x-web-view-ver": SPLATNET_VERSION,
   };
   req.body = JSON.stringify({
     extensions: {
