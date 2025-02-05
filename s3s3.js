@@ -866,21 +866,23 @@ async function fetchGraphQl(hash, variables) {
     const json = await req.loadJSON();
     return json["data"];
   } catch {
-    if (req.response.statusCode === 400) {
-      const alert = new Alert();
-      alert.title = "Failed to Fetch";
-      alert.message = `s3s3 cannot fetch from SplatNet 3. Please file a bug on https://github.com/zhxie/s3s3/issues.`;
-      alert.addCancelAction("Quit");
-      await alert.present();
-    } else if (req.response.statusCode === 401) {
-      const alert = new Alert();
-      alert.title = "Failed to Fetch";
-      alert.message = `s3s3 cannot fetch from SplatNet 3. Your bullet token may be expired. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.`;
-      alert.addAction("See Instructions");
-      alert.addCancelAction("Quit");
-      const res = await alert.present();
-      if (res === 0) {
-        await Safari.openInApp("https://github.com/zhxie/s3s3?tab=readme-ov-file#usage");
+    if (req.response?.statusCode) {
+      if (req.response.statusCode === 401) {
+        const alert = new Alert();
+        alert.title = "Failed to Fetch";
+        alert.message = `s3s3 cannot fetch from SplatNet 3. Your bullet token may be expired. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.`;
+        alert.addAction("See Instructions");
+        alert.addCancelAction("Quit");
+        const res = await alert.present();
+        if (res === 0) {
+          await Safari.openInApp("https://github.com/zhxie/s3s3?tab=readme-ov-file#usage");
+        }
+      } else {
+        const alert = new Alert();
+        alert.title = "Failed to Fetch";
+        alert.message = `s3s3 cannot fetch from SplatNet 3 (${req.response.statusCode}). Please file a bug on https://github.com/zhxie/s3s3/issues.`;
+        alert.addCancelAction("Quit");
+        await alert.present();
       }
     } else {
       const alert = new Alert();
