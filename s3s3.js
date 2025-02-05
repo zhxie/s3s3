@@ -193,7 +193,7 @@ for (const group of battleGroups) {
       continue;
     }
 
-    const data = await fetchGraphQl("f893e1ddcfb8a4fd645fd75ced173f18b2750e5cfba41d2669b9814f6ceaec46", { vsResultId: id });
+    const data = await fetchGraphQl("20f88b10d0b1d264fcb2163b0866de26bbf6f2b362f397a0258a75b7fa900943", { vsResultId: id });
     if (data === undefined) {
       return;
     }
@@ -487,7 +487,7 @@ if (uploadedJobIds === undefined) {
 
 // Fetch latest jobs.
 let jobIndex = 0;
-const jobData = await fetchGraphQl("0f8c33970a425683bb1bdecca50a0ca4fb3c3641c0b2a1237aedfde9c0cb2b8f", {});
+const jobData = await fetchGraphQl("e11a8cf2c3de7348495dea5cdcaa25e0c153541c4ed63f044b6c174bc5b703df", {});
 if (jobData === undefined) {
   return;
 }
