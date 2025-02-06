@@ -1,13 +1,4 @@
 {
   "printWidth": 1000,
-  "tabWidth": 2,
-  "importOrder": ["^[./]"],
-  "overrides": [
-    {
-      "files": "models/placeholders.ts",
-      "options": {
-        "printWidth": 200
-      }
-    }
-  ]
+  "tabWidth": 2
 }
