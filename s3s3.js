@@ -6,9 +6,9 @@ let API_KEY = "";
 let LANG = "";
 // Your bullet token.
 let BULLET_TOKEN = "";
-// Your cookie. This field is optional but recommended.
+// Your cookie. This field is optional but recommended to fill.
 let COOKIE = "";
-// Your user agent. This field is optional but recommended.
+// Your user agent. This field is optional but recommended to fill.
 let USER_AGENT = "";
 
 // Debug configuration. DO NOT EDIT unless you know what you are doing.
@@ -229,17 +229,16 @@ if (battleData === undefined) {
   return;
 }
 const battleGroups = battleData["latestBattleHistories"]["historyGroups"]["nodes"];
-console.log(`Battle groups: ${battleGroups.length}`);
+const battleTotal = battleGroups.reduce((prev, cur) => prev + cur["historyDetails"]["nodes"].length, 0);
 for (const group of battleGroups) {
   const battleNodes = group["historyDetails"]["nodes"];
-  console.log(`Battle nodes: ${battleNodes.length}`);
   for (const node of battleNodes) {
     battleIndex++;
     const id = node["id"];
-    console.log(`[${battleIndex}] Battle ID: ${id}`);
+    console.log(`[${battleIndex}/${battleTotal}] Battle ID: ${id}`);
     const uuid = generateUuidV5("b3a2dbf5-2c09-4792-b78c-00b548b70aeb", Data.fromBase64String(id).toRawString().slice(-52));
     if (uploadedBattleIds.includes(uuid)) {
-      console.log("Omit");
+      console.log("Uploaded");
       continue;
     }
 
@@ -551,17 +550,16 @@ if (jobData === undefined) {
   return;
 }
 const jobGroups = jobData["coopResult"]["historyGroups"]["nodes"];
-console.log(`Job groups: ${jobGroups.length}`);
+const jobTotal = jobGroups.reduce((prev, cur) => prev + cur["historyDetails"]["nodes"].length, 0);
 for (const group of jobGroups) {
   const jobNodes = group["historyDetails"]["nodes"];
-  console.log(`Job nodes: ${jobNodes.length}`);
   for (const node of jobNodes) {
     jobIndex++;
     const id = node["id"];
-    console.log(`[${jobIndex}] Job ID: ${id}`);
+    console.log(`[${jobIndex}/${jobTotal}] Job ID: ${id}`);
     const uuid = generateUuidV5("f1911910-605e-11ed-a622-7085c2057a9d", Data.fromBase64String(id).toRawString());
     if (uploadedJobIds.includes(uuid)) {
-      console.log("Omit");
+      console.log("Uploaded");
       continue;
     }
 
@@ -900,7 +898,7 @@ async function checkSplatnetVersion() {
 async function fetchGraphQl(hash, variables) {
   const req = new Request("https://api.lp1.av5ja.srv.nintendo.net/api/graphql");
   req.method = "POST";
-  // HACK: Some headers can only be fetched from Mudmouth.
+  // Some headers can only be fetched from Mudmouth.
   req.headers = {
     Accept: "*/*",
     "Accept-Encoding": "gzip, deflate, br",
@@ -947,7 +945,7 @@ async function fetchGraphQl(hash, variables) {
       } else {
         const alert = new Alert();
         alert.title = "Failed to Fetch";
-        alert.message = `s3s3 cannot fetch from SplatNet 3 (${req.response.statusCode}). Please file a bug on https://github.com/zhxie/s3s3/issues.`;
+        alert.message = `s3s3 cannot fetch from SplatNet 3. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${req.response.statusCode}`;
         alert.addCancelAction("Quit");
         await alert.present();
       }
@@ -1108,14 +1106,10 @@ async function upload(path, id, payload) {
       const alert = new Alert();
       alert.title = "Failed to Upload";
       alert.message = `s3s3 cannot upload ${id} to stat.ink. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${JSON.stringify(json["error"])}`;
-      alert.addAction("Copy to Clipboard");
       alert.addCancelAction("OK");
-      const res = await alert.present();
-      if (res === 0) {
-        Pasteboard.copy(JSON.stringify(payload));
-      }
+      await alert.present();
     } else {
-      console.log(`Uploaded to: ${json["url"]}`);
+      console.log(`Upload to: ${json["url"]}`);
       return json["url"];
     }
   } catch {
