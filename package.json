@@ -1,0 +1,19 @@
+{
+  "name": "s3s3",
+  "version": "0.1.2",
+  "description": "Another script for uploading battles and jobs from SplatNet 3 to stat.ink.",
+  "keywords": [
+    "splatoon",
+    "stat.ink"
+  ],
+  "license": "GPL-3.0",
+  "author": "Sketch",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "format": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2"
+  },
+  "private": true
+}

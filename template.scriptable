@@ -1,0 +1,10 @@
+{
+  "always_run_in_app": false,
+  "icon": {
+    "color": "orange",
+    "glyph": "chart-pie"
+  },
+  "name": "s3s3",
+  "script": "",
+  "share_sheet_inputs": []
+}
