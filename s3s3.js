@@ -236,303 +236,312 @@ for (const group of battleGroups) {
     battleIndex++;
     const id = node["id"];
     console.log(`[${battleIndex}/${battleTotal}] Battle ID: ${id}`);
-    const uuid = generateUuidV5("b3a2dbf5-2c09-4792-b78c-00b548b70aeb", Data.fromBase64String(id).toRawString().slice(-52));
-    if (uploadedBattleIds.includes(uuid)) {
-      console.log("Uploaded");
-      continue;
-    }
+    try {
+      const uuid = generateUuidV5("b3a2dbf5-2c09-4792-b78c-00b548b70aeb", Data.fromBase64String(id).toRawString().slice(-52));
+      if (uploadedBattleIds.includes(uuid)) {
+        console.log("Uploaded");
+        continue;
+      }
 
-    const data = await fetchGraphQl("20f88b10d0b1d264fcb2163b0866de26bbf6f2b362f397a0258a75b7fa900943", { vsResultId: id });
-    if (data === undefined) {
-      return;
-    }
+      const data = await fetchGraphQl("20f88b10d0b1d264fcb2163b0866de26bbf6f2b362f397a0258a75b7fa900943", { vsResultId: id });
+      if (data === undefined) {
+        return;
+      }
 
-    // Format payload for battle.
-    const battle = data["vsHistoryDetail"];
-    const payload = {};
+      // Format payload for battle.
+      const battle = data["vsHistoryDetail"];
+      const payload = {};
 
-    // UUID.
-    payload["uuid"] = uuid;
+      // UUID.
+      payload["uuid"] = uuid;
 
-    // Mode.
-    const mode = battle["vsMode"]["mode"];
-    switch (mode) {
-      case "REGULAR":
-        payload["lobby"] = "regular";
-        break;
-      case "BANKARA":
-        switch (battle["bankaraMatch"]["mode"]) {
-          case "OPEN":
-            payload["lobby"] = "bankara_open";
-            break;
-          case "CHALLENGE":
-            payload["lobby"] = "bankara_challenge";
-            break;
-        }
-        break;
-      case "X_MATCH":
-        payload["lobby"] = "xmatch";
-        break;
-      case "LEAGUE":
-        payload["lobby"] = "event";
-        break;
-      case "PRIVATE":
-        payload["lobby"] = "private";
-        break;
-      case "FEST":
-        switch (decodeBase64Index(battle["vsMode"]["id"])) {
-          case 6:
-          case 8:
-            payload["lobby"] = "splatfest_open";
-            break;
-          case 7:
-            payload["lobby"] = "splatfest_challenge";
-            break;
-        }
-        break;
-    }
-
-    // Rule.
-    const rule = battle["vsRule"]["rule"];
-    switch (rule) {
-      case "TURF_WAR":
-        payload["rule"] = "nawabari";
-        break;
-      case "AREA":
-        payload["rule"] = "area";
-        break;
-      case "LOFT":
-        payload["rule"] = "yagura";
-        break;
-      case "GOAL":
-        payload["rule"] = "hoko";
-        break;
-      case "CLAM":
-        payload["rule"] = "asari";
-        break;
-      case "TRI_COLOR":
-        payload["rule"] = "tricolor";
-        break;
-    }
-
-    // Stage.
-    payload["stage"] = decodeBase64Index(battle["vsStage"]["id"]);
-
-    // Player and teams.
-    for (let i = 0; i < battle["myTeam"]["players"].length; i++) {
-      const player = battle["myTeam"]["players"][i];
-      if (player["isMyself"]) {
-        payload["weapon"] = decodeBase64Index(player["weapon"]["id"]);
-        payload["inked"] = player["paint"];
-        payload["species"] = player["species"].toLowerCase();
-        payload["rank_in_team"] = i + 1;
-        if (player["result"]) {
-          payload["kill_or_assist"] = player["result"]["kill"];
-          payload["assist"] = player["result"]["assist"];
-          payload["kill"] = payload["kill_or_assist"] - payload["assist"];
-          payload["death"] = player["result"]["death"];
-          payload["special"] = player["result"]["special"];
-          payload["signal"] = player["result"]["noroshiTry"];
+      // Mode.
+      const mode = battle["vsMode"]["mode"];
+      switch (mode) {
+        case "REGULAR":
+          payload["lobby"] = "regular";
           break;
+        case "BANKARA":
+          switch (battle["bankaraMatch"]["mode"]) {
+            case "OPEN":
+              payload["lobby"] = "bankara_open";
+              break;
+            case "CHALLENGE":
+              payload["lobby"] = "bankara_challenge";
+              break;
+          }
+          break;
+        case "X_MATCH":
+          payload["lobby"] = "xmatch";
+          break;
+        case "LEAGUE":
+          payload["lobby"] = "event";
+          break;
+        case "PRIVATE":
+          payload["lobby"] = "private";
+          break;
+        case "FEST":
+          switch (decodeBase64Index(battle["vsMode"]["id"])) {
+            case 6:
+            case 8:
+              payload["lobby"] = "splatfest_open";
+              break;
+            case 7:
+              payload["lobby"] = "splatfest_challenge";
+              break;
+          }
+          break;
+      }
+
+      // Rule.
+      const rule = battle["vsRule"]["rule"];
+      switch (rule) {
+        case "TURF_WAR":
+          payload["rule"] = "nawabari";
+          break;
+        case "AREA":
+          payload["rule"] = "area";
+          break;
+        case "LOFT":
+          payload["rule"] = "yagura";
+          break;
+        case "GOAL":
+          payload["rule"] = "hoko";
+          break;
+        case "CLAM":
+          payload["rule"] = "asari";
+          break;
+        case "TRI_COLOR":
+          payload["rule"] = "tricolor";
+          break;
+      }
+
+      // Stage.
+      payload["stage"] = decodeBase64Index(battle["vsStage"]["id"]);
+
+      // Player and teams.
+      for (let i = 0; i < battle["myTeam"]["players"].length; i++) {
+        const player = battle["myTeam"]["players"][i];
+        if (player["isMyself"]) {
+          payload["weapon"] = decodeBase64Index(player["weapon"]["id"]);
+          payload["inked"] = player["paint"];
+          payload["species"] = player["species"].toLowerCase();
+          payload["rank_in_team"] = i + 1;
+          if (player["result"]) {
+            payload["kill_or_assist"] = player["result"]["kill"];
+            payload["assist"] = player["result"]["assist"];
+            payload["kill"] = payload["kill_or_assist"] - payload["assist"];
+            payload["death"] = player["result"]["death"];
+            payload["special"] = player["result"]["special"];
+            payload["signal"] = player["result"]["noroshiTry"];
+            break;
+          }
         }
       }
-    }
-    payload["our_team_inked"] = battle["myTeam"]["players"].reduce((prev, cur) => prev + cur["paint"], 0);
-    payload["their_team_inked"] = battle["otherTeams"][0]["players"].reduce((prev, cur) => prev + cur["paint"], 0);
-    if (battle["otherTeams"].length > 1) {
-      payload["third_team_inked"] = battle["otherTeams"][1]["players"].reduce((prev, cur) => prev + cur["paint"], 0);
-    }
+      payload["our_team_inked"] = battle["myTeam"]["players"].reduce((prev, cur) => prev + cur["paint"], 0);
+      payload["their_team_inked"] = battle["otherTeams"][0]["players"].reduce((prev, cur) => prev + cur["paint"], 0);
+      if (battle["otherTeams"].length > 1) {
+        payload["third_team_inked"] = battle["otherTeams"][1]["players"].reduce((prev, cur) => prev + cur["paint"], 0);
+      }
 
-    // Result.
-    switch (battle["judgement"]) {
-      case "WIN":
-        payload["result"] = "win";
-        break;
-      case "LOSE":
-      case "DEEMED_LOSE":
-        payload["result"] = "lose";
-        break;
-      case "EXEMPTED_LOSE":
-        payload["result"] = "exempted_lose";
-        break;
-      case "DRAW":
-        payload["result"] = "draw";
-        break;
-    }
+      // Result.
+      switch (battle["judgement"]) {
+        case "WIN":
+          payload["result"] = "win";
+          break;
+        case "LOSE":
+        case "DEEMED_LOSE":
+          payload["result"] = "lose";
+          break;
+        case "EXEMPTED_LOSE":
+          payload["result"] = "exempted_lose";
+          break;
+        case "DRAW":
+          payload["result"] = "draw";
+          break;
+      }
 
-    // Basic info.
-    switch (rule) {
-      case "TURF_WAR":
-      case "TRI_COLOR":
-        try {
-          payload["our_team_percent"] = battle["myTeam"]["result"]["paintRatio"] * 100;
-          payload["their_team_percent"] = battle["otherTeams"][0]["result"]["paintRatio"] * 100;
-          payload["third_team_percent"] = battle["otherTeams"][1]["result"]["paintRatio"] * 100;
-        } catch {}
-        break;
-      default:
-        try {
-          payload["knockout"] = !battle["knockout"] || battle["knockout"] == "NEITHER" ? "no" : "yes";
-          payload["our_team_count"] = battle["myTeam"]["result"]["score"];
-          payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"];
-        } catch {}
-        break;
-    }
+      // Basic info.
+      switch (rule) {
+        case "TURF_WAR":
+        case "TRI_COLOR":
+          try {
+            payload["our_team_percent"] = battle["myTeam"]["result"]["paintRatio"] * 100;
+            payload["their_team_percent"] = battle["otherTeams"][0]["result"]["paintRatio"] * 100;
+            payload["third_team_percent"] = battle["otherTeams"][1]["result"]["paintRatio"] * 100;
+          } catch {}
+          break;
+        default:
+          try {
+            payload["knockout"] = !battle["knockout"] || battle["knockout"] == "NEITHER" ? "no" : "yes";
+            payload["our_team_count"] = battle["myTeam"]["result"]["score"];
+            payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"];
+          } catch {}
+          break;
+      }
 
-    // Times.
-    payload["start_at"] = Math.floor(new Date(battle["playedTime"]).valueOf() / 1000);
-    payload["end_at"] = payload["start_at"] + battle["duration"];
+      // Times.
+      payload["start_at"] = Math.floor(new Date(battle["playedTime"]).valueOf() / 1000);
+      payload["end_at"] = payload["start_at"] + battle["duration"];
 
-    // Colors.
-    payload["our_team_color"] = convertColor(battle["myTeam"]["color"]);
-    payload["their_team_color"] = convertColor(battle["otherTeams"][0]["color"]);
-    if (rule === "TRI_COLOR") {
-      payload["third_team_color"] = convertColor(battle["otherTeams"][1]["color"]);
-    }
+      // Colors.
+      payload["our_team_color"] = convertColor(battle["myTeam"]["color"]);
+      payload["their_team_color"] = convertColor(battle["otherTeams"][0]["color"]);
+      if (rule === "TRI_COLOR") {
+        payload["third_team_color"] = convertColor(battle["otherTeams"][1]["color"]);
+      }
 
-    // Players.
-    const teams = [battle["myTeam"], ...battle["otherTeams"]];
-    for (let i = 0; i < teams.length; i++) {
-      const team = teams[i];
-      const teamPayload = [];
-      for (const player of team["players"]) {
-        playerPayload = {};
-        playerPayload["me"] = player["isMyself"] ? "yes" : "no";
-        playerPayload["name"] = player["name"];
-        if (player["nameId"]) {
-          playerPayload["number"] = player["nameId"];
+      // Players.
+      const teams = [battle["myTeam"], ...battle["otherTeams"]];
+      for (let i = 0; i < teams.length; i++) {
+        const team = teams[i];
+        const teamPayload = [];
+        for (const player of team["players"]) {
+          playerPayload = {};
+          playerPayload["me"] = player["isMyself"] ? "yes" : "no";
+          playerPayload["name"] = player["name"];
+          if (player["nameId"]) {
+            playerPayload["number"] = player["nameId"];
+          }
+          playerPayload["splashtag_title"] = player["byname"];
+          playerPayload["weapon"] = decodeBase64Index(player["weapon"]["id"]);
+          playerPayload["inked"] = player["paint"];
+          playerPayload["species"] = player["species"].toLowerCase();
+          playerPayload["rank_in_team"] = i + 1;
+
+          if (player["crown"]) {
+            playerPayload["crown_type"] = "x";
+          }
+          switch (player["festDragonCert"]) {
+            case "DRAGON":
+              playerPayload["crown_type"] = "100x";
+              break;
+            case "DOUBLE_DRAGON":
+              playerPayload["crown_type"] = "333x";
+              break;
+          }
+
+          if (player["result"]) {
+            playerPayload["kill_or_assist"] = player["result"]["kill"];
+            playerPayload["assist"] = player["result"]["assist"];
+            playerPayload["kill"] = playerPayload["kill_or_assist"] - playerPayload["assist"];
+            playerPayload["death"] = player["result"]["death"];
+            playerPayload["special"] = player["result"]["special"];
+            playerPayload["signal"] = player["result"]["noroshiTry"];
+            playerPayload["disconnected"] = "no";
+            playerPayload["crown"] = player["crown"] ? "yes" : "no";
+            playerPayload["gears"] = {};
+
+            const Gears = { headGear: "headgear", clothingGear: "clothing", shoesGear: "shoes" };
+            for (const key of Object.keys(Gears)) {
+              const gearPayload = { primary_ability: translateGearAbility(player[key]["primaryGearPower"]["image"]["url"]), secondary_abilities: [] };
+              for (const ability of player[key]["additionalGearPowers"]) {
+                gearPayload.secondary_abilities.push(translateGearAbility(ability["image"]["url"]));
+              }
+              playerPayload["gears"][Gears[key]] = gearPayload;
+            }
+          } else {
+            playerPayload["disconnected"] = "yes";
+          }
+
+          teamPayload.push(playerPayload);
         }
-        playerPayload["splashtag_title"] = player["byname"];
-        playerPayload["weapon"] = decodeBase64Index(player["weapon"]["id"]);
-        playerPayload["inked"] = player["paint"];
-        playerPayload["species"] = player["species"].toLowerCase();
-        playerPayload["rank_in_team"] = i + 1;
 
-        if (player["crown"]) {
-          playerPayload["crown_type"] = "x";
+        switch (i) {
+          case 0:
+            payload["our_team_players"] = teamPayload;
+            break;
+          case 1:
+            payload["their_team_players"] = teamPayload;
+            break;
+          case 2:
+            payload["third_team_players"] = teamPayload;
+            break;
         }
-        switch (player["festDragonCert"]) {
+      }
+
+      // Splatfest Battles.
+      if (mode === "FEST") {
+        payload["our_team_theme"] = battle["myTeam"]["festTeamName"];
+        payload["their_team_theme"] = battle["otherTeams"][0]["festTeamName"];
+        switch (battle["festMatch"]["dragonMatchType"]) {
+          case "DECUPLE":
+            payload["fest_dragon"] = "10x";
+            break;
           case "DRAGON":
-            playerPayload["crown_type"] = "100x";
+            payload["fest_dragon"] = "100x";
             break;
           case "DOUBLE_DRAGON":
-            playerPayload["crown_type"] = "333x";
+            payload["fest_dragon"] = "333x";
+            break;
+          case "CONCH_SHELL_SCRAMBLE":
+            payload["conch_clash"] = "1x";
+            break;
+          case "CONCH_SHELL_SCRAMBLE_10":
+            payload["conch_clash"] = "10x";
+            break;
+          case "CONCH_SHELL_SCRAMBLE_33":
+            payload["conch_clash"] = "33x";
             break;
         }
+        payload["clout_change"] = battle["festMatch"]["contribution"];
+        payload["fest_power"] = battle["festMatch"]["myFestPower"];
 
-        if (player["result"]) {
-          playerPayload["kill_or_assist"] = player["result"]["kill"];
-          playerPayload["assist"] = player["result"]["assist"];
-          playerPayload["kill"] = playerPayload["kill_or_assist"] - playerPayload["assist"];
-          playerPayload["death"] = player["result"]["death"];
-          playerPayload["special"] = player["result"]["special"];
-          playerPayload["signal"] = player["result"]["noroshiTry"];
-          playerPayload["disconnected"] = "no";
-          playerPayload["crown"] = player["crown"] ? "yes" : "no";
-          playerPayload["gears"] = {};
+        if (rule === "TRI_COLOR") {
+          payload["third_team_theme"] = battle["otherTeams"][1]["festTeamName"];
 
-          const Gears = { headGear: "headgear", clothingGear: "clothing", shoesGear: "shoes" };
-          for (const key of Object.keys(Gears)) {
-            const gearPayload = { primary_ability: translateGearAbility(player[key]["primaryGearPower"]["image"]["url"]), secondary_abilities: [] };
-            for (const ability of player[key]["additionalGearPowers"]) {
-              gearPayload.secondary_abilities.push(translateGearAbility(ability["image"]["url"]));
-            }
-            playerPayload["gears"][Gears[key]] = gearPayload;
-          }
-        } else {
-          playerPayload["disconnected"] = "yes";
+          payload["our_team_role"] = battle["myTeam"]["tricolorRole"] === "DEFENSE" ? "defender" : "attacker";
+          payload["their_team_role"] = battle["otherTeams"][0]["tricolorRole"] === "DEFENSE" ? "defender" : "attacker";
+          payload["third_team_role"] = battle["otherTeams"][1]["tricolorRole"] === "DEFENSE" ? "defender" : "attacker";
         }
-
-        teamPayload.push(playerPayload);
       }
 
-      switch (i) {
-        case 0:
-          payload["our_team_players"] = teamPayload;
-          break;
-        case 1:
-          payload["their_team_players"] = teamPayload;
-          break;
-        case 2:
-          payload["third_team_players"] = teamPayload;
-          break;
+      // Anarchy Battles.
+      // TODO: fetch overview.
+      if (mode === "BANKARA") {
+        payload["rank_exp_change"] = battle["bankaraMatch"]["earnedUdemaePoint"];
+
+        try {
+          payload["bankara_power_after"] = battle["bankaraMatch"]["bankaraPower"]["power"];
+        } catch {}
       }
-    }
 
-    // Splatfest Battles.
-    if (mode === "FEST") {
-      payload["our_team_theme"] = battle["myTeam"]["festTeamName"];
-      payload["their_team_theme"] = battle["otherTeams"][0]["festTeamName"];
-      switch (battle["festMatch"]["dragonMatchType"]) {
-        case "DECUPLE":
-          payload["fest_dragon"] = "10x";
-          break;
-        case "DRAGON":
-          payload["fest_dragon"] = "100x";
-          break;
-        case "DOUBLE_DRAGON":
-          payload["fest_dragon"] = "333x";
-          break;
-        case "CONCH_SHELL_SCRAMBLE":
-          payload["conch_clash"] = "1x";
-          break;
-        case "CONCH_SHELL_SCRAMBLE_10":
-          payload["conch_clash"] = "10x";
-          break;
-        case "CONCH_SHELL_SCRAMBLE_33":
-          payload["conch_clash"] = "33x";
-          break;
+      // X Battles.
+      // TODO: fetch overview.
+      if (mode === "X_MATCH") {
+        if (battle["xMatch"]["lastXPower"]) {
+          payload["x_power_before"] = battle["xMatch"]["lastXPower"];
+        }
       }
-      payload["clout_change"] = battle["festMatch"]["contribution"];
-      payload["fest_power"] = battle["festMatch"]["myFestPower"];
 
-      if (rule === "TRI_COLOR") {
-        payload["third_team_theme"] = battle["otherTeams"][1]["festTeamName"];
-
-        payload["our_team_role"] = battle["myTeam"]["tricolorRole"] === "DEFENSE" ? "defender" : "attacker";
-        payload["their_team_role"] = battle["otherTeams"][0]["tricolorRole"] === "DEFENSE" ? "defender" : "attacker";
-        payload["third_team_role"] = battle["otherTeams"][1]["tricolorRole"] === "DEFENSE" ? "defender" : "attacker";
+      // Challenges.
+      if (mode === "LEAGUE") {
+        payload["event"] = battle["leagueMatch"]["leagueMatchEvent"]["id"];
+        payload["event_power"] = battle["leagueMatch"]["myLeaguePower"];
       }
-    }
 
-    // Anarchy Battles.
-    // TODO: fetch overview.
-    if (mode === "BANKARA") {
-      payload["rank_exp_change"] = battle["bankaraMatch"]["earnedUdemaePoint"];
-
-      try {
-        payload["bankara_power_after"] = battle["bankaraMatch"]["bankaraPower"]["power"];
-      } catch {}
-    }
-
-    // X Battles.
-    // TODO: fetch overview.
-    if (mode === "X_MATCH") {
-      if (battle["xMatch"]["lastXPower"]) {
-        payload["x_power_before"] = battle["xMatch"]["lastXPower"];
+      // Medals.
+      const medals = [];
+      for (const medal of battle["awards"]) {
+        medals.push(medal["name"]);
       }
-    }
+      payload["medals"] = medals;
 
-    // Challenges.
-    if (mode === "LEAGUE") {
-      payload["event"] = battle["leagueMatch"]["leagueMatchEvent"]["id"];
-      payload["event_power"] = battle["leagueMatch"]["myLeaguePower"];
-    }
+      payload["automated"] = "yes";
+      payload["splatnet_json"] = JSON.stringify(battle);
 
-    // Medals.
-    const medals = [];
-    for (const medal of battle["awards"]) {
-      medals.push(medal["name"]);
-    }
-    payload["medals"] = medals;
-
-    payload["automated"] = "yes";
-    payload["splatnet_json"] = JSON.stringify(battle);
-
-    // Upload to stat.ink.
-    const url = await upload("battle", id, payload);
-    if (url) {
-      scheduleNotification(url);
+      // Upload to stat.ink.
+      const url = await upload("battle", id, payload);
+      if (url) {
+        scheduleNotification(url);
+      }
+    } catch (e) {
+      const alert = new Alert();
+      alert.title = "Unrecognized Data";
+      alert.message = `s3s3 cannot parse the data. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${e}`;
+      alert.addCancelAction("Quit");
+      await alert.present();
+      return;
     }
   }
 }
@@ -557,126 +566,218 @@ for (const group of jobGroups) {
     jobIndex++;
     const id = node["id"];
     console.log(`[${jobIndex}/${jobTotal}] Job ID: ${id}`);
-    const uuid = generateUuidV5("f1911910-605e-11ed-a622-7085c2057a9d", Data.fromBase64String(id).toRawString());
-    if (uploadedJobIds.includes(uuid)) {
-      console.log("Uploaded");
-      continue;
-    }
+    try {
+      const uuid = generateUuidV5("f1911910-605e-11ed-a622-7085c2057a9d", Data.fromBase64String(id).toRawString());
+      if (uploadedJobIds.includes(uuid)) {
+        console.log("Uploaded");
+        continue;
+      }
 
-    const data = await fetchGraphQl("f2d55873a9281213ae27edc171e2b19131b3021a2ae263757543cdd3bf015cc8", { coopHistoryDetailId: id });
-    if (data === undefined) {
-      return;
-    }
+      const data = await fetchGraphQl("f2d55873a9281213ae27edc171e2b19131b3021a2ae263757543cdd3bf015cc8", { coopHistoryDetailId: id });
+      if (data === undefined) {
+        return;
+      }
 
-    // Format payload for job.
-    const job = data["coopHistoryDetail"];
-    const payload = {};
+      // Format payload for job.
+      const job = data["coopHistoryDetail"];
+      const payload = {};
 
-    // UUID.
-    payload["uuid"] = uuid;
+      // UUID.
+      payload["uuid"] = uuid;
 
-    // Rule.
-    const rule = job["rule"];
-    switch (rule) {
-      case "PRIVATE_CUSTOM":
-      case "PRIVATE_SCENARIO":
-        payload["private"] = "yes";
-        break;
-      default:
-        if (job["jobPoint"] === null) {
+      // Rule.
+      const rule = job["rule"];
+      switch (rule) {
+        case "PRIVATE_CUSTOM":
+        case "PRIVATE_SCENARIO":
           payload["private"] = "yes";
-        } else {
-          payload["private"] = "no";
+          break;
+        default:
+          if (job["jobPoint"] === null) {
+            payload["private"] = "yes";
+          } else {
+            payload["private"] = "no";
+          }
+          break;
+      }
+      payload["big_run"] = rule === "BIG_RUN" ? "yes" : "no";
+      payload["eggstra_work"] = rule === "TEAM_CONTEST" ? "yes" : "no";
+
+      // Stage.
+      payload["stage"] = decodeBase64Index(job["coopStage"]["id"]);
+
+      // Basic info.
+      if (rule !== "TEAM_CONTEST") {
+        payload["danger_rate"] = job["dangerRate"] * 100;
+      }
+      payload["king_smell"] = job["smellMeter"];
+      payload["job_score"] = job["jobScore"];
+      payload["job_rate"] = job["jobRate"];
+      payload["job_bonus"] = job["jobBonus"];
+      payload["job_point"] = job["jobPoint"];
+
+      // Wave.
+      const wavesCleared = job["resultWave"] - 1;
+      const maxWaves = rule === "TEAM_CONTEST" ? 5 : 3;
+      payload["clear_waves"] = wavesCleared === -1 ? maxWaves : wavesCleared;
+      if (payload["clear_waves"] < 0) {
+        payload["clear_waves"] = null;
+      } else if (payload["clear_waves"] !== maxWaves) {
+        const lastWave = job["waveResults"][payload["clear_waves"]];
+        if (lastWave["teamDeliverCount"] >= lastWave["deliverNorm"]) {
+          payload["fail_reason"] = "wipe_out";
         }
-        break;
-    }
-    payload["big_run"] = rule === "BIG_RUN" ? "yes" : "no";
-    payload["eggstra_work"] = rule === "TEAM_CONTEST" ? "yes" : "no";
-
-    // Stage.
-    payload["stage"] = decodeBase64Index(job["coopStage"]["id"]);
-
-    // Basic info.
-    if (rule !== "TEAM_CONTEST") {
-      payload["danger_rate"] = job["dangerRate"] * 100;
-    }
-    payload["king_smell"] = job["smellMeter"];
-    payload["job_score"] = job["jobScore"];
-    payload["job_rate"] = job["jobRate"];
-    payload["job_bonus"] = job["jobBonus"];
-    payload["job_point"] = job["jobPoint"];
-
-    // Wave.
-    const wavesCleared = job["resultWave"] - 1;
-    const maxWaves = rule === "TEAM_CONTEST" ? 5 : 3;
-    payload["clear_waves"] = wavesCleared === -1 ? maxWaves : wavesCleared;
-    if (payload["clear_waves"] < 0) {
-      payload["clear_waves"] = null;
-    } else if (payload["clear_waves"] !== maxWaves) {
-      const lastWave = job["waveResults"][payload["clear_waves"]];
-      if (lastWave["teamDeliverCount"] >= lastWave["deliverNorm"]) {
-        payload["fail_reason"] = "wipe_out";
-      }
-    }
-
-    // Xtrawave.
-    if (job["bossResult"]) {
-      payload["king_salmonid"] = decodeBase64Index(job["bossResult"]["boss"]["id"]);
-      payload["clear_extra"] = job["bossResult"]["hasDefeatBoss"] ? "yes" : "no";
-    }
-
-    // Title.
-    if (payload["private"] !== "yes" && rule !== "TEAM_CONTEST") {
-      payload["title_after"] = decodeBase64Index(job["afterGrade"]["id"]);
-      payload["title_exp_after"] = job["afterGradePoint"];
-    }
-
-    // Eggs.
-    let goldenEggs = 0;
-    let powerEggs = job["myResult"]["deliverCount"];
-    for (const player in job["memberResults"]) {
-      powerEggs += player["deliverCount"];
-    }
-    for (const wave of job["waveResults"]) {
-      goldenEggs += wave["teamDeliverCount"] ?? 0;
-    }
-    payload["golden_eggs"] = goldenEggs;
-    payload["power_eggs"] = powerEggs;
-
-    // Scales.
-    if (job["scale"]) {
-      payload["gold_scale"] = job["scale"]["gold"];
-      payload["silver_scale"] = job["scale"]["silver"];
-      payload["bronze_scale"] = job["scale"]["bronze"];
-    }
-
-    // Players.
-    payload["players"] = [];
-    const memberResults = [job["myResult"], ...job["memberResults"]];
-    for (let i = 0; i < memberResults.length; i++) {
-      const player = memberResults[i];
-      const playerPayload = {};
-      playerPayload["me"] = i === 0 ? "yes" : "no";
-      playerPayload["name"] = player["player"]["name"];
-      playerPayload["number"] = player["player"]["nameId"];
-      playerPayload["splashtag_title"] = player["player"]["byname"];
-      playerPayload["golden_eggs"] = player["goldenDeliverCount"];
-      playerPayload["golden_assist"] = player["goldenAssistCount"];
-      playerPayload["power_eggs"] = player["deliverCount"];
-      playerPayload["rescue"] = player["rescueCount"];
-      playerPayload["rescued"] = player["rescuedCount"];
-      playerPayload["defeat_boss"] = player["defeatEnemyCount"];
-      playerPayload["species"] = player["player"]["species"].toLowerCase();
-
-      if (!playerPayload["golden_eggs"] && !playerPayload["power_eggs"] && !playerPayload["rescue"] && !playerPayload["rescued"] && !playerPayload["defeat_boss"]) {
-        playerPayload["disconnected"] = "yes";
-      } else {
-        playerPayload["disconnected"] = "no";
       }
 
-      playerPayload["uniform"] = decodeBase64Index(player["player"]["uniform"]["id"]);
+      // Xtrawave.
+      if (job["bossResult"]) {
+        payload["king_salmonid"] = decodeBase64Index(job["bossResult"]["boss"]["id"]);
+        payload["clear_extra"] = job["bossResult"]["hasDefeatBoss"] ? "yes" : "no";
+      }
 
-      if (player["specialWeapon"]) {
+      // Title.
+      if (payload["private"] !== "yes" && rule !== "TEAM_CONTEST") {
+        payload["title_after"] = decodeBase64Index(job["afterGrade"]["id"]);
+        payload["title_exp_after"] = job["afterGradePoint"];
+      }
+
+      // Eggs.
+      let goldenEggs = 0;
+      let powerEggs = job["myResult"]["deliverCount"];
+      for (const player in job["memberResults"]) {
+        powerEggs += player["deliverCount"];
+      }
+      for (const wave of job["waveResults"]) {
+        goldenEggs += wave["teamDeliverCount"] ?? 0;
+      }
+      payload["golden_eggs"] = goldenEggs;
+      payload["power_eggs"] = powerEggs;
+
+      // Scales.
+      if (job["scale"]) {
+        payload["gold_scale"] = job["scale"]["gold"];
+        payload["silver_scale"] = job["scale"]["silver"];
+        payload["bronze_scale"] = job["scale"]["bronze"];
+      }
+
+      // Players.
+      payload["players"] = [];
+      const memberResults = [job["myResult"], ...job["memberResults"]];
+      for (let i = 0; i < memberResults.length; i++) {
+        const player = memberResults[i];
+        const playerPayload = {};
+        playerPayload["me"] = i === 0 ? "yes" : "no";
+        playerPayload["name"] = player["player"]["name"];
+        playerPayload["number"] = player["player"]["nameId"];
+        playerPayload["splashtag_title"] = player["player"]["byname"];
+        playerPayload["golden_eggs"] = player["goldenDeliverCount"];
+        playerPayload["golden_assist"] = player["goldenAssistCount"];
+        playerPayload["power_eggs"] = player["deliverCount"];
+        playerPayload["rescue"] = player["rescueCount"];
+        playerPayload["rescued"] = player["rescuedCount"];
+        playerPayload["defeat_boss"] = player["defeatEnemyCount"];
+        playerPayload["species"] = player["player"]["species"].toLowerCase();
+
+        if (!playerPayload["golden_eggs"] && !playerPayload["power_eggs"] && !playerPayload["rescue"] && !playerPayload["rescued"] && !playerPayload["defeat_boss"]) {
+          playerPayload["disconnected"] = "yes";
+        } else {
+          playerPayload["disconnected"] = "no";
+        }
+
+        playerPayload["uniform"] = decodeBase64Index(player["player"]["uniform"]["id"]);
+
+        if (player["specialWeapon"]) {
+          const SpecialWeapons = {
+            20006: "nicedama",
+            20007: "hopsonar",
+            20009: "megaphone51",
+            20010: "jetpack",
+            20012: "kanitank",
+            20013: "sameride",
+            20014: "tripletornado",
+            20017: "teioika",
+            20018: "ultra_chakuchi",
+          };
+          const specialId = player["specialWeapon"]["weaponId"];
+          playerPayload["special"] = SpecialWeapons[specialId];
+        }
+
+        playerPayload["weapons"] = player["weapons"].map((weapon) => translateWeapon(weapon["image"]["url"]));
+        for (const weapon of player["weapons"]) {
+          if (weapon["image"]["url"].includes("473fffb2442075078d8bb7125744905abdeae651b6a5b7453ae295582e45f7d1")) {
+          }
+        }
+
+        payload["players"].push(playerPayload);
+      }
+
+      // Waves.
+      payload["waves"] = [];
+      for (let i = 0; i < job["waveResults"].length; i++) {
+        const wave = job["waveResults"][i];
+        const wavePayload = {};
+        switch (wave["waterLevel"]) {
+          case 0:
+            wavePayload["tide"] = "low";
+            break;
+          case 1:
+            wavePayload["tide"] = "normal";
+            break;
+          case 2:
+            wavePayload["tide"] = "high";
+            break;
+        }
+        wavePayload["golden_quota"] = wave["deliverNorm"];
+        wavePayload["golden_delivered"] = wave["teamDeliverCount"];
+        wavePayload["golden_appearances"] = wave["goldenPopCount"];
+
+        if (rule === "TEAM_CONTEST") {
+          let dangerRate = 60;
+          if (i > 0) {
+            const prev = payload["waves"][payload["waves"].length - 1];
+            dangerRate = prev["danger_rate"];
+            const quota = prev["golden_quota"];
+            const delivered = prev["golden_delivered"];
+            switch (payload["players"].length) {
+              case 1:
+                if (delivered >= quota * 2) {
+                  dangerRate += 10;
+                } else if (delivered >= quota * 1.5) {
+                  dangerRate += 5;
+                }
+                break;
+              case 2:
+                if (delivered >= quota * 2) {
+                  dangerRate += 20;
+                } else if (delivered >= quota * 1.5) {
+                  dangerRate += 10;
+                }
+                break;
+              case 3:
+                if (delivered >= quota * 2) {
+                  dangerRate += 40;
+                } else if (delivered >= quota * 1.5) {
+                  dangerRate += 20;
+                }
+                break;
+              case 4:
+                if (delivered >= quota * 2) {
+                  dangerRate += 60;
+                } else if (delivered >= quota * 1.5) {
+                  dangerRate += 30;
+                }
+                break;
+            }
+            wavePayload["danger_rate"] = dangerRate;
+          }
+        }
+
+        if (wave["eventWave"]) {
+          const Events = { 1: "rush", 2: "goldie_seeking", 3: "the_griller", 4: "the_mothership", 5: "fog", 6: "cohock_charge", 7: "giant_tornado", 8: "mudmouth_eruption" };
+          const eventId = decodeBase64Index(wave["eventWave"]["id"]);
+          wavePayload["event"] = Events[eventId];
+        }
+
         const SpecialWeapons = {
           20006: "nicedama",
           20007: "hopsonar",
@@ -688,156 +789,73 @@ for (const group of jobGroups) {
           20017: "teioika",
           20018: "ultra_chakuchi",
         };
-        const specialId = player["specialWeapon"]["weaponId"];
-        playerPayload["special"] = SpecialWeapons[specialId];
-      }
-
-      playerPayload["weapons"] = player["weapons"].map((weapon) => translateWeapon(weapon["image"]["url"]));
-      for (const weapon of player["weapons"]) {
-        if (weapon["image"]["url"].includes("473fffb2442075078d8bb7125744905abdeae651b6a5b7453ae295582e45f7d1")) {
+        const SpecialWeaponUsage = {
+          nicedama: 0,
+          hopsonar: 0,
+          megaphone51: 0,
+          jetpack: 0,
+          kanitank: 0,
+          sameride: 0,
+          tripletornado: 0,
+          teioika: 0,
+          ultra_chakuchi: 0,
+        };
+        for (const specialWeapon of wave["specialWeapons"]) {
+          const id = decodeBase64Index(specialWeapon["id"]);
+          const key = SpecialWeapons[id];
+          SpecialWeaponUsage[key]++;
         }
+        wavePayload["special_uses"] = SpecialWeaponUsage;
+
+        payload["waves"].push(wavePayload);
       }
 
-      payload["players"].push(playerPayload);
-    }
-
-    // Waves.
-    payload["waves"] = [];
-    for (let i = 0; i < job["waveResults"].length; i++) {
-      const wave = job["waveResults"][i];
-      const wavePayload = {};
-      switch (wave["waterLevel"]) {
-        case 0:
-          wavePayload["tide"] = "low";
-          break;
-        case 1:
-          wavePayload["tide"] = "normal";
-          break;
-        case 2:
-          wavePayload["tide"] = "high";
-          break;
-      }
-      wavePayload["golden_quota"] = wave["deliverNorm"];
-      wavePayload["golden_delivered"] = wave["teamDeliverCount"];
-      wavePayload["golden_appearances"] = wave["goldenPopCount"];
-
-      if (rule === "TEAM_CONTEST") {
-        let dangerRate = 60;
-        if (i > 0) {
-          const prev = payload["waves"][payload["waves"].length - 1];
-          dangerRate = prev["danger_rate"];
-          const quota = prev["golden_quota"];
-          const delivered = prev["golden_delivered"];
-          switch (payload["players"].length) {
-            case 1:
-              if (delivered >= quota * 2) {
-                dangerRate += 10;
-              } else if (delivered >= quota * 1.5) {
-                dangerRate += 5;
-              }
-              break;
-            case 2:
-              if (delivered >= quota * 2) {
-                dangerRate += 20;
-              } else if (delivered >= quota * 1.5) {
-                dangerRate += 10;
-              }
-              break;
-            case 3:
-              if (delivered >= quota * 2) {
-                dangerRate += 40;
-              } else if (delivered >= quota * 1.5) {
-                dangerRate += 20;
-              }
-              break;
-            case 4:
-              if (delivered >= quota * 2) {
-                dangerRate += 60;
-              } else if (delivered >= quota * 1.5) {
-                dangerRate += 30;
-              }
-              break;
-          }
-          wavePayload["danger_rate"] = dangerRate;
-        }
-      }
-
-      if (wave["eventWave"]) {
-        const Events = { 1: "rush", 2: "goldie_seeking", 3: "the_griller", 4: "the_mothership", 5: "fog", 6: "cohock_charge", 7: "giant_tornado", 8: "mudmouth_eruption" };
-        const eventId = decodeBase64Index(wave["eventWave"]["id"]);
-        wavePayload["event"] = Events[eventId];
-      }
-
-      const SpecialWeapons = {
-        20006: "nicedama",
-        20007: "hopsonar",
-        20009: "megaphone51",
-        20010: "jetpack",
-        20012: "kanitank",
-        20013: "sameride",
-        20014: "tripletornado",
-        20017: "teioika",
-        20018: "ultra_chakuchi",
+      // Boss Salmonid.
+      const BossSalmonids = {
+        4: "bakudan",
+        5: "katapad",
+        6: "teppan",
+        7: "hebi",
+        8: "tower",
+        9: "mogura",
+        10: "koumori",
+        11: "hashira",
+        12: "diver",
+        13: "tekkyu",
+        14: "nabebuta",
+        15: "kin_shake",
+        17: "grill",
+        20: "doro_shake",
       };
-      const SpecialWeaponUsage = {
-        nicedama: 0,
-        hopsonar: 0,
-        megaphone51: 0,
-        jetpack: 0,
-        kanitank: 0,
-        sameride: 0,
-        tripletornado: 0,
-        teioika: 0,
-        ultra_chakuchi: 0,
-      };
-      for (const specialWeapon of wave["specialWeapons"]) {
-        const id = decodeBase64Index(specialWeapon["id"]);
-        const key = SpecialWeapons[id];
-        SpecialWeaponUsage[key]++;
+      payload["bosses"] = {};
+      for (const result of job["enemyResults"]) {
+        const id = decodeBase64Index(result["enemy"]["id"]);
+        const key = BossSalmonids[id];
+        payload["bosses"][key] = {
+          appearances: result["popCount"],
+          defeated: result["teamDefeatCount"],
+          defeated_by_me: result["defeatCount"],
+        };
       }
-      wavePayload["special_uses"] = SpecialWeaponUsage;
 
-      payload["waves"].push(wavePayload);
-    }
+      // Time.
+      payload["start_at"] = Math.floor(new Date(job["playedTime"]).valueOf() / 1000);
 
-    // Boss Salmonid.
-    const BossSalmonids = {
-      4: "bakudan",
-      5: "katapad",
-      6: "teppan",
-      7: "hebi",
-      8: "tower",
-      9: "mogura",
-      10: "koumori",
-      11: "hashira",
-      12: "diver",
-      13: "tekkyu",
-      14: "nabebuta",
-      15: "kin_shake",
-      17: "grill",
-      20: "doro_shake",
-    };
-    payload["bosses"] = {};
-    for (const result of job["enemyResults"]) {
-      const id = decodeBase64Index(result["enemy"]["id"]);
-      const key = BossSalmonids[id];
-      payload["bosses"][key] = {
-        appearances: result["popCount"],
-        defeated: result["teamDefeatCount"],
-        defeated_by_me: result["defeatCount"],
-      };
-    }
+      payload["automated"] = "yes";
+      payload["splatnet_json"] = JSON.stringify(job);
 
-    // Time.
-    payload["start_at"] = Math.floor(new Date(job["playedTime"]).valueOf() / 1000);
-
-    payload["automated"] = "yes";
-    payload["splatnet_json"] = JSON.stringify(job);
-
-    // Upload to stat.ink.
-    const url = await upload("salmon", id, payload);
-    if (url) {
-      scheduleNotification(url);
+      // Upload to stat.ink.
+      const url = await upload("salmon", id, payload);
+      if (url) {
+        scheduleNotification(url);
+      }
+    } catch (e) {
+      const alert = new Alert();
+      alert.title = "Unrecognized Data";
+      alert.message = `s3s3 cannot parse the data. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${e}`;
+      alert.addCancelAction("Quit");
+      await alert.present();
+      return;
     }
   }
 }
