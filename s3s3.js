@@ -644,7 +644,7 @@ for (const group of jobGroups) {
       // Eggs.
       let goldenEggs = 0;
       let powerEggs = job["myResult"]["deliverCount"];
-      for (const player in job["memberResults"]) {
+      for (const player of job["memberResults"]) {
         powerEggs += player["deliverCount"];
       }
       for (const wave of job["waveResults"]) {
