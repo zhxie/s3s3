@@ -282,11 +282,11 @@ for (const group of battleGroups) {
           break;
         case "FEST":
           switch (decodeBase64Index(battle["vsMode"]["id"])) {
-            case 6:
-            case 8:
+            case "6":
+            case "8":
               payload["lobby"] = "splatfest_open";
               break;
-            case 7:
+            case "7":
               payload["lobby"] = "splatfest_challenge";
               break;
           }
