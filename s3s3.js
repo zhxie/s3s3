@@ -147,7 +147,7 @@ if (BULLET_TOKEN) {
   const str = data.toRawString() + "\r\n";
   const re = /Authorization: Bearer (.*)\r\n/g;
   const match = re.exec(str);
-  BULLET_TOKEN = match?.[1];
+  BULLET_TOKEN = match?.[1] ?? "";
   Keychain.set("bulletToken", BULLET_TOKEN);
 } else if (Keychain.contains("bulletToken")) {
   console.log("Use bullet token from keychain");
@@ -175,7 +175,7 @@ if (COOKIE) {
   const str = data.toRawString() + "\r\n";
   const re = /Cookie: (.*)\r\n/g;
   const match = re.exec(str);
-  COOKIE = match?.[1];
+  COOKIE = match?.[1] ?? "";
   Keychain.set("cookie", COOKIE);
 } else if (Keychain.contains("cookie")) {
   console.log("Use cookie from keychain");
@@ -191,7 +191,7 @@ if (USER_AGENT) {
   const str = data.toRawString() + "\r\n";
   const re = /User-Agent: (.*)\r\n/g;
   const match = re.exec(str);
-  USER_AGENT = match?.[1];
+  USER_AGENT = match?.[1] ?? "";
   Keychain.set("userAgent", USER_AGENT);
 } else if (Keychain.contains("userAgent")) {
   console.log("Use user agent from keychain");
@@ -200,7 +200,7 @@ if (USER_AGENT) {
 if (!COOKIE || !USER_AGENT) {
   const alert = new Alert();
   alert.title = "Empty Cookie or User Agent";
-  alert.message = "Your cookie or user agent is empty. Although these fields are optional, ignoring them may lead to potential security risks.";
+  alert.message = "Your cookie or user agent is empty. Although these fields are optional, ignoring them may lead to potential security risks.\n\nIf you are using s3s3 from Mudmouth, it is likely that Mudmouth captures requests from widgets of Nintendo Switch Online instead of the app itself. You may continue to use s3s3 or try to capture requests again in Mudmouth.";
   alert.addDestructiveAction("Continue");
   alert.addCancelAction("Quit");
   const res = await alert.present();
