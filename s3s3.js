@@ -200,7 +200,7 @@ if (USER_AGENT) {
 if (!COOKIE || !USER_AGENT) {
   const alert = new Alert();
   alert.title = "Empty Cookie or User Agent";
-  alert.message = "Your cookie or user agent is empty. Although these fields are optional, ignoring them may lead to potential security risks.\n\nIf you are using s3s3 from Mudmouth, it is likely that Mudmouth captures requests from widgets of Nintendo Switch Online instead of the app itself. You may continue to use s3s3 or try to capture requests again in Mudmouth.";
+  alert.message = "Your cookie or user agent is empty. Although these fields are optional, ignoring them may lead to potential security risks. \n\nIf you are using s3s3 from Mudmouth, it is likely that Mudmouth captures requests from widgets of Nintendo Switch Online instead of the app itself. You may continue to use s3s3 or try to capture requests again in Mudmouth.";
   alert.addDestructiveAction("Continue");
   alert.addCancelAction("Quit");
   const res = await alert.present();
@@ -243,7 +243,7 @@ for (const group of battleGroups) {
         continue;
       }
 
-      const data = await fetchGraphQl("20f88b10d0b1d264fcb2163b0866de26bbf6f2b362f397a0258a75b7fa900943", { vsResultId: id });
+      const data = await fetchGraphQl("20f88b10d0b1d264fcb2163b0866de26bbf6f2b362f397a0258a75b7fa900943", { vsResultId: id }, true);
       if (data === undefined) {
         return;
       }
@@ -538,10 +538,18 @@ for (const group of battleGroups) {
     } catch (e) {
       const alert = new Alert();
       alert.title = "Unrecognized Data";
-      alert.message = `s3s3 cannot parse the data. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${e}`;
+      alert.message = `s3s3 cannot parse the data. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\nYou can also open the result in SplatNet 3 to see if it loads correctly. If it does not display properly, the issue might be with SplatNet 3. \n\n${e}`;
+      alert.addAction("Continue");
+      alert.addAction("Open in SplatNet 3");
       alert.addCancelAction("Quit");
-      await alert.present();
-      return;
+      const res = await alert.present();
+      switch (res) {
+        case 1:
+          await Safari.open(`com.nintendo.znca://znca/game/4834290508791808?p=/history/detail/${id}`);
+          return;
+        case -1:
+          return;
+      }
     }
   }
 }
@@ -573,7 +581,7 @@ for (const group of jobGroups) {
         continue;
       }
 
-      const data = await fetchGraphQl("f2d55873a9281213ae27edc171e2b19131b3021a2ae263757543cdd3bf015cc8", { coopHistoryDetailId: id });
+      const data = await fetchGraphQl("f2d55873a9281213ae27edc171e2b19131b3021a2ae263757543cdd3bf015cc8", { coopHistoryDetailId: id }, true);
       if (data === undefined) {
         return;
       }
@@ -852,10 +860,14 @@ for (const group of jobGroups) {
     } catch (e) {
       const alert = new Alert();
       alert.title = "Unrecognized Data";
-      alert.message = `s3s3 cannot parse the data. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${e}`;
+      // TODO: we cannot open a coop in SplatNet 3 using URL Scheme.
+      alert.message = `s3s3 cannot parse the data. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\nYou can also open the result in SplatNet 3 to see if it loads correctly. If it does not display properly, the issue might be with SplatNet 3. \n\n${e}`;
+      alert.addAction("Continue");
       alert.addCancelAction("Quit");
-      await alert.present();
-      return;
+      const res = await alert.present();
+      if (res === -1) {
+        return;
+      }
     }
   }
 }
@@ -913,7 +925,7 @@ async function checkSplatnetVersion() {
   return version;
 }
 
-async function fetchGraphQl(hash, variables) {
+async function fetchGraphQl(hash, variables, throwable) {
   const req = new Request("https://api.lp1.av5ja.srv.nintendo.net/api/graphql");
   req.method = "POST";
   // Some headers can only be fetched from Mudmouth.
@@ -961,6 +973,9 @@ async function fetchGraphQl(hash, variables) {
           await Safari.openInApp("https://github.com/zhxie/s3s3?tab=readme-ov-file#usage");
         }
       } else {
+        if (throwable) {
+          throw "s3s3 cannot fetch from SplatNet 3.";
+        }
         const alert = new Alert();
         alert.title = "Failed to Fetch";
         alert.message = `s3s3 cannot fetch from SplatNet 3. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${req.response.statusCode}`;
