@@ -538,7 +538,7 @@ for (const group of battleGroups) {
     } catch (e) {
       const alert = new Alert();
       alert.title = "Unrecognized Data";
-      alert.message = `s3s3 cannot parse the data. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\nYou can also open the result in SplatNet 3 to see if it loads correctly. If it does not display properly, the issue might be with SplatNet 3. \n\n${e}`;
+      alert.message = `s3s3 cannot parse the data of ${id}. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\nYou can also open the result in SplatNet 3 to see if it loads correctly. If it does not display properly, the issue might be with SplatNet 3. \n\n${e}`;
       alert.addAction("Continue");
       alert.addAction("Open in SplatNet 3");
       alert.addCancelAction("Quit");
@@ -861,7 +861,7 @@ for (const group of jobGroups) {
       const alert = new Alert();
       alert.title = "Unrecognized Data";
       // TODO: we cannot open a coop in SplatNet 3 using URL Scheme.
-      alert.message = `s3s3 cannot parse the data. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\nYou can also open the result in SplatNet 3 to see if it loads correctly. If it does not display properly, the issue might be with SplatNet 3. \n\n${e}`;
+      alert.message = `s3s3 cannot parse the data of ${id}. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\nYou can also open the result in SplatNet 3 to see if it loads correctly. If it does not display properly, the issue might be with SplatNet 3. \n\n${e}`;
       alert.addAction("Continue");
       alert.addCancelAction("Quit");
       const res = await alert.present();
@@ -1148,7 +1148,7 @@ async function upload(path, id, payload) {
   } catch {
     const alert = new Alert();
     alert.title = "Failed to Upload";
-    alert.message = `s3s3 cannot upload ${id} to stat.ink. Please check your internet connectivity.`;
+    alert.message = `s3s3 cannot upload to stat.ink. Please check your internet connectivity.`;
     alert.addCancelAction("OK");
     await alert.present();
   }
