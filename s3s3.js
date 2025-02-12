@@ -224,7 +224,7 @@ if (uploadedBattleIds === undefined) {
 // Fetch latest battles.
 // TODO: fetch the latest 50 battles in each modes.
 let battleIndex = 0;
-const battleData = await fetchGraphQl("b24d22fd6cb251c515c2b90044039698aa27bc1fab15801d83014d919cd45780", {});
+const battleData = await fetchGraphQl("b24d22fd6cb251c515c2b90044039698aa27bc1fab15801d83014d919cd45780");
 if (battleData === undefined) {
   return;
 }
@@ -562,7 +562,7 @@ if (uploadedJobIds === undefined) {
 
 // Fetch latest jobs.
 let jobIndex = 0;
-const jobData = await fetchGraphQl("e11a8cf2c3de7348495dea5cdcaa25e0c153541c4ed63f044b6c174bc5b703df", {});
+const jobData = await fetchGraphQl("e11a8cf2c3de7348495dea5cdcaa25e0c153541c4ed63f044b6c174bc5b703df");
 if (jobData === undefined) {
   return;
 }
@@ -955,7 +955,7 @@ async function fetchGraphQl(hash, variables, throwable) {
         version: 1,
       },
     },
-    variables: variables,
+    variables: variables ?? {},
   });
   try {
     const json = await req.loadJSON();
