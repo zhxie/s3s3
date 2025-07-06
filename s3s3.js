@@ -6,9 +6,9 @@ let API_KEY = "";
 let LANG = "";
 // Your bullet token.
 let BULLET_TOKEN = "";
-// Your cookie. This field is optional but recommended to fill.
+// Your cookie.
 let COOKIE = "";
-// Your user agent. This field is optional but recommended to fill.
+// Your user agent.
 let USER_AGENT = "";
 
 // Debug configuration. DO NOT EDIT unless you know what you are doing.
@@ -154,18 +154,6 @@ if (BULLET_TOKEN) {
   console.log("Use bullet token from keychain");
   BULLET_TOKEN = Keychain.get("bulletToken");
 }
-if (!BULLET_TOKEN) {
-  const alert = new Alert();
-  alert.title = t("bullet_token_error_title");
-  alert.message = t("bullet_token_error_message");
-  alert.addAction(t("see_instructions"));
-  alert.addCancelAction(t("quit"));
-  const res = await alert.present();
-  if (res === 0) {
-    await Safari.openInApp("https://github.com/zhxie/s3s3?tab=readme-ov-file#usage");
-  }
-  return;
-}
 if (COOKIE) {
   console.log("Use manually set cookie");
 } else if (args.queryParameters["requestHeaders"]) {
@@ -198,16 +186,17 @@ if (USER_AGENT) {
   console.log("Use user agent from keychain");
   USER_AGENT = Keychain.get("userAgent");
 }
-if (!COOKIE || !USER_AGENT) {
+if (!BULLET_TOKEN || !COOKIE || !USER_AGENT) {
   const alert = new Alert();
-  alert.title = t("cookie_warn_title");
-  alert.message = t("cookie_warn_message");
-  alert.addDestructiveAction(t("continue"));
+  alert.title = t("bullet_token_error_title");
+  alert.message = t("bullet_token_error_message");
+  alert.addAction(t("see_instructions"));
   alert.addCancelAction(t("quit"));
   const res = await alert.present();
-  if (res === -1) {
-    return;
+  if (res === 0) {
+    await Safari.openInApp("https://github.com/zhxie/s3s3?tab=readme-ov-file#usage");
   }
+  return;
 }
 
 // Check SplatNet version.
@@ -1330,10 +1319,8 @@ const Strings = {
     api_key_input_message: "You can get your API key in https://stat.ink/profile.",
     api_key_error_title: "Invalid stat.ink API Key",
     api_key_error_message: "Your stat.ink API key is invalid. You can get your API key in https://stat.ink/profile.",
-    bullet_token_error_title: "Invalid Bullet Token",
-    bullet_token_error_message: "Your bullet token is invalid. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.",
-    cookie_warn_title: "Empty Cookie or User Agent",
-    cookie_warn_message: "Your cookie or user agent is empty. Although these fields are optional, ignoring them may lead to potential security risks. \n\nIf you are using s3s3 from Mudmouth, it is likely that Mudmouth captures requests from widgets of Nintendo Switch Online instead of the app itself. You may continue to use s3s3 or try to capture requests again in Mudmouth.",
+    bullet_token_error_title: "Invalid Bullet Token, Cookie or User Agent",
+    bullet_token_error_message: "Your bullet token, cookie or user agent is invalid. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.\n\nIf you are using s3s3 from Mudmouth, please remove s3s3 profile of Mudmouth and add again.",
     parse_error_alert: "Unrecognized Data",
     parse_error_message: "s3s3 cannot parse the data of {id}. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\nYou can also open the result in SplatNet 3 to see if it loads correctly. If it does not display properly, the issue might be with SplatNet 3. \n\n{error}",
     upload_title: "Uploaded Successfully",
