@@ -25,36 +25,7 @@ if (!updated) {
 }
 
 // Prepare and configuration check.
-if (API_KEY) {
-  console.log("Use manually set bullet token");
-  Keychain.set("apiKey", API_KEY);
-} else if (Keychain.contains("apiKey")) {
-  console.log("Use API key from keychain");
-  API_KEY = Keychain.get("apiKey");
-} else {
-  const alert = new Alert();
-  alert.title = "Input your stat.ink API Key";
-  alert.message = "You can get your API key in https://stat.ink/profile.";
-  alert.addTextField();
-  alert.addCancelAction("OK");
-  await alert.present();
-  API_KEY = alert.textFieldValue(0);
-  Keychain.set("apiKey", API_KEY);
-}
-if (API_KEY.length !== 43) {
-  Keychain.remove("apiKey");
 
-  const alert = new Alert();
-  alert.title = "Invalid stat.ink API Key";
-  alert.message = "Your stat.ink API key is invalid. You can get your API key in https://stat.ink/profile.";
-  alert.addAction("Open stat.ink Profile");
-  alert.addCancelAction("Quit");
-  const res = await alert.present();
-  if (res === 0) {
-    await Safari.openInApp("https://stat.ink/profile");
-  }
-  return;
-}
 if (LANG) {
   console.log("Use manually set language");
   Keychain.set("lang", LANG);
@@ -63,7 +34,7 @@ if (LANG) {
   LANG = Keychain.get("lang");
 } else {
   const alert = new Alert();
-  alert.title = "Select Your Language";
+  alert.title = t("language_input_title");
   alert.addAction("Deutsch");
   alert.addAction("English (UK)");
   alert.addAction("English (United States)");
@@ -131,10 +102,40 @@ if (!["de-DE", "en-GB", "en-US", "es-ES", "es-MX", "fr-CA", "fr-FR", "it-IT", "j
   Keychain.remove("lang");
 
   const alert = new Alert();
-  alert.title = "Invalid Language";
-  alert.message = "Your language is invalid. Please check your configuration.";
+  alert.title = t("language_error_title");
+  alert.message = t("language_error_message");
   alert.addCancelAction("Quit");
   await alert.present();
+  return;
+}
+if (API_KEY) {
+  console.log("Use manually set bullet token");
+  Keychain.set("apiKey", API_KEY);
+} else if (Keychain.contains("apiKey")) {
+  console.log("Use API key from keychain");
+  API_KEY = Keychain.get("apiKey");
+} else {
+  const alert = new Alert();
+  alert.title = t("api_key_input_title");
+  alert.message = t("api_key_input_message");
+  alert.addTextField();
+  alert.addCancelAction(t("ok"));
+  await alert.present();
+  API_KEY = alert.textFieldValue(0);
+  Keychain.set("apiKey", API_KEY);
+}
+if (API_KEY.length !== 43) {
+  Keychain.remove("apiKey");
+
+  const alert = new Alert();
+  alert.title = t("api_key_error_title");
+  alert.message = t("api_key_error_message");
+  alert.addAction(t("open_stat_ink_profile"));
+  alert.addCancelAction(t("quit"));
+  const res = await alert.present();
+  if (res === 0) {
+    await Safari.openInApp("https://stat.ink/profile");
+  }
   return;
 }
 if (BULLET_TOKEN) {
@@ -155,10 +156,10 @@ if (BULLET_TOKEN) {
 }
 if (!BULLET_TOKEN) {
   const alert = new Alert();
-  alert.title = "Invalid Bullet Token";
-  alert.message = "Your bullet token is invalid. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.";
-  alert.addAction("See Instructions");
-  alert.addCancelAction("Quit");
+  alert.title = t("bullet_token_error_title");
+  alert.message = t("bullet_token_error_message");
+  alert.addAction(t("see_instructions"));
+  alert.addCancelAction(t("quit"));
   const res = await alert.present();
   if (res === 0) {
     await Safari.openInApp("https://github.com/zhxie/s3s3?tab=readme-ov-file#usage");
@@ -199,10 +200,10 @@ if (USER_AGENT) {
 }
 if (!COOKIE || !USER_AGENT) {
   const alert = new Alert();
-  alert.title = "Empty Cookie or User Agent";
-  alert.message = "Your cookie or user agent is empty. Although these fields are optional, ignoring them may lead to potential security risks. \n\nIf you are using s3s3 from Mudmouth, it is likely that Mudmouth captures requests from widgets of Nintendo Switch Online instead of the app itself. You may continue to use s3s3 or try to capture requests again in Mudmouth.";
-  alert.addDestructiveAction("Continue");
-  alert.addCancelAction("Quit");
+  alert.title = t("cookie_warn_title");
+  alert.message = t("cookie_warn_message");
+  alert.addDestructiveAction(t("continue"));
+  alert.addCancelAction(t("quit"));
   const res = await alert.present();
   if (res === -1) {
     return;
@@ -537,11 +538,11 @@ for (const group of battleGroups) {
       }
     } catch (e) {
       const alert = new Alert();
-      alert.title = "Unrecognized Data";
-      alert.message = `s3s3 cannot parse the data of ${id}. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\nYou can also open the result in SplatNet 3 to see if it loads correctly. If it does not display properly, the issue might be with SplatNet 3. \n\n${e}`;
-      alert.addAction("Continue");
-      alert.addAction("Open in SplatNet 3");
-      alert.addCancelAction("Quit");
+      alert.title = t("parse_error_alert");
+      alert.message = t("parse_error_message", { id, error: e });
+      alert.addAction(t("continue"));
+      alert.addAction(t("open_in_splatnet_3"));
+      alert.addCancelAction(t("quit"));
       const res = await alert.present();
       switch (res) {
         case 1:
@@ -859,11 +860,11 @@ for (const group of jobGroups) {
       }
     } catch (e) {
       const alert = new Alert();
-      alert.title = "Unrecognized Data";
+      alert.title = t("parse_error_alert");
       // TODO: we cannot open a coop in SplatNet 3 using URL Scheme.
-      alert.message = `s3s3 cannot parse the data of ${id}. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\nYou can also open the result in SplatNet 3 to see if it loads correctly. If it does not display properly, the issue might be with SplatNet 3. \n\n${e}`;
-      alert.addAction("Continue");
-      alert.addCancelAction("Quit");
+      alert.message = t("parse_error_message", { id, error: e });
+      alert.addAction(t("continue"));
+      alert.addCancelAction(t("quit"));
       const res = await alert.present();
       if (res === -1) {
         return;
@@ -874,10 +875,10 @@ for (const group of jobGroups) {
 
 // Alert on completion.
 const alert = new Alert();
-alert.title = "Uploaded Successfully";
-alert.message = "s3s3 has uploaded your results to stat.ink.";
-alert.addAction("Open stat.ink");
-alert.addCancelAction("OK");
+alert.title = t("upload_title");
+alert.message = t("upload_message");
+alert.addAction(t("open_stat_ink"));
+alert.addCancelAction(t("ok"));
 const res = await alert.present();
 if (res === 0) {
   await Safari.openInApp("https://stat.ink/");
@@ -891,10 +892,10 @@ async function checkUpdate() {
     console.log(`Online s3s3 version: ${version}`);
     if (version !== A_VERSION) {
       const alert = new Alert();
-      alert.title = "New Version Available";
-      alert.message = `There is a new version (${version}) of s3s3. Please update s3s3 to the latest version as soon as possible.`;
-      alert.addAction("Update Now");
-      alert.addCancelAction("OK");
+      alert.title = t("update_title");
+      alert.message = t("update_message", { version });
+      alert.addAction(t("update_now"));
+      alert.addCancelAction(t("ok"));
       const res = await alert.present();
       if (res === 0) {
         await Safari.open("https://github.com/zhxie/s3s3/releases/latest");
@@ -917,9 +918,9 @@ async function checkSplatnetVersion() {
 
   if (version.length === 0) {
     const alert = new Alert();
-    alert.title = "Cannot Check SplatNet 3 Version";
-    alert.message = "s3s3 cannot check SplatNet 3 version. Please check your internet connectivity.";
-    alert.addCancelAction("Quit");
+    alert.title = t("splatnet_3_version_error_title");
+    alert.message = t("splatnet_3_version_error_message");
+    alert.addCancelAction(t("quit"));
     await alert.present();
   }
   return version;
@@ -964,10 +965,10 @@ async function fetchGraphQl(hash, variables, throwable) {
     if (req.response?.statusCode) {
       if (req.response.statusCode === 401) {
         const alert = new Alert();
-        alert.title = "Failed to Fetch";
-        alert.message = `s3s3 cannot fetch from SplatNet 3. Your bullet token may be expired. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.`;
-        alert.addAction("See Instructions");
-        alert.addCancelAction("Quit");
+        alert.title = t("fetch_error_title");
+        alert.message = t("fetch_unauthorized_error_message");
+        alert.addAction(t("see_instructions"));
+        alert.addCancelAction(t("quit"));
         const res = await alert.present();
         if (res === 0) {
           await Safari.openInApp("https://github.com/zhxie/s3s3?tab=readme-ov-file#usage");
@@ -977,16 +978,16 @@ async function fetchGraphQl(hash, variables, throwable) {
           throw "s3s3 cannot fetch from SplatNet 3.";
         }
         const alert = new Alert();
-        alert.title = "Failed to Fetch";
-        alert.message = `s3s3 cannot fetch from SplatNet 3. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${req.response.statusCode}`;
-        alert.addCancelAction("Quit");
+        alert.title = t("fetch_error_title");
+        alert.message = t("fetch_other_error_message", { statusCode: req.response.statusCode });
+        alert.addCancelAction(t("quit"));
         await alert.present();
       }
     } else {
       const alert = new Alert();
-      alert.title = "Failed to Fetch";
-      alert.message = `s3s3 cannot fetch from SplatNet 3. Please check your internet connectivity.`;
-      alert.addCancelAction("Quit");
+      alert.title = t("fetch_error_title");
+      alert.message = t("fetch_network_error_message");
+      alert.addCancelAction(t("quit"));
       await alert.present();
     }
     return undefined;
@@ -1001,18 +1002,18 @@ async function getUploaded(path) {
     json = await req.loadJSON();
   } catch {
     const alert = new Alert();
-    alert.title = "Failed to Get Uploaded List";
-    alert.message = `s3s3 cannot get uploaded list from stat.ink. Please check your internet connectivity.`;
-    alert.addCancelAction("Quit");
+    alert.title = t("uploaded_list_error_title");
+    alert.message = t("uploaded_list_network_error_message");
+    alert.addCancelAction(t("quit"));
     await alert.present();
     return undefined;
   }
 
   if (json["status"]) {
     const alert = new Alert();
-    alert.title = "Failed to Get Uploaded List";
-    alert.message = `s3s3 cannot get uploaded list from stat.ink. ${JSON.stringify(json["message"])}`;
-    alert.addCancelAction("Quit");
+    alert.title = t("uploaded_list_error_title");
+    alert.message = t("uploaded_list_other_error_message", { message: JSON.stringify(json["message"]) });
+    alert.addCancelAction(t("quit"));
     await alert.present();
     return undefined;
   }
@@ -1131,15 +1132,15 @@ async function upload(path, id, payload) {
     const json = await req.loadJSON();
     if (json["status"]) {
       const alert = new Alert();
-      alert.title = "Failed to Upload";
-      alert.message = `s3s3 cannot upload ${id} to stat.ink. ${JSON.stringify(json["message"])}`;
-      alert.addCancelAction("OK");
+      alert.title = t("upload_error_title");
+      alert.message = t("upload_error_other_error_message", { id, message: JSON.stringify(json["message"]) });
+      alert.addCancelAction(t("ok"));
       await alert.present();
     } else if (json["error"]) {
       const alert = new Alert();
-      alert.title = "Failed to Upload";
-      alert.message = `s3s3 cannot upload ${id} to stat.ink. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${JSON.stringify(json["error"])}`;
-      alert.addCancelAction("OK");
+      alert.title = t("upload_error_title");
+      alert.message = t("upload_error_bad_request_error_message", { id, error: JSON.stringify(json["error"]) });
+      alert.addCancelAction(t("ok"));
       await alert.present();
     } else {
       console.log(`Upload to: ${json["url"]}`);
@@ -1147,17 +1148,17 @@ async function upload(path, id, payload) {
     }
   } catch {
     const alert = new Alert();
-    alert.title = "Failed to Upload";
-    alert.message = `s3s3 cannot upload to stat.ink. Please check your internet connectivity.`;
-    alert.addCancelAction("OK");
+    alert.title = t("upload_error_title");
+    alert.message = t("upload_error_network_error_message");
+    alert.addCancelAction(t("ok"));
     await alert.present();
   }
 }
 
 async function scheduleNotification(url) {
   const notification = new Notification();
-  notification.title = "Result Uploaded";
-  notification.body = `New result uploaded to ${url}.`;
+  notification.title = t("upload_notification_title");
+  notification.body = t("upload_notification_body", { url });
   await notification.schedule();
 }
 
@@ -1310,4 +1311,71 @@ function translateWeapon(url) {
       return Weapons[key];
     }
   }
+}
+
+const Strings = {
+  en: {
+    ok: "OK",
+    continue: "Continue",
+    quit: "Quit",
+    open_stat_ink_profile: "Open stat.ink Profile",
+    see_instructions: "See Instructions",
+    open_in_splatnet_3: "Open in SplatNet 3",
+    open_stat_ink: "Open stat.ink",
+    update_now: "Update Now",
+    language_input_title: "Select Your Language",
+    language_error_title: "Invalid Language",
+    language_error_message: "Your language is invalid. Please check your configuration.",
+    api_key_input_title: "Input your stat.ink API Key",
+    api_key_input_message: "You can get your API key in https://stat.ink/profile.",
+    api_key_error_title: "Invalid stat.ink API Key",
+    api_key_error_message: "Your stat.ink API key is invalid. You can get your API key in https://stat.ink/profile.",
+    bullet_token_error_title: "Invalid Bullet Token",
+    bullet_token_error_message: "Your bullet token is invalid. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.",
+    cookie_warn_title: "Empty Cookie or User Agent",
+    cookie_warn_message: "Your cookie or user agent is empty. Although these fields are optional, ignoring them may lead to potential security risks. \n\nIf you are using s3s3 from Mudmouth, it is likely that Mudmouth captures requests from widgets of Nintendo Switch Online instead of the app itself. You may continue to use s3s3 or try to capture requests again in Mudmouth.",
+    parse_error_alert: "Unrecognized Data",
+    parse_error_message: "s3s3 cannot parse the data of {id}. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\nYou can also open the result in SplatNet 3 to see if it loads correctly. If it does not display properly, the issue might be with SplatNet 3. \n\n{error}",
+    upload_title: "Uploaded Successfully",
+    upload_message: "s3s3 has uploaded your results to stat.ink.",
+    update_title: "New Version Available",
+    update_message: "There is a new version ({version}) of s3s3. Please update s3s3 to the latest version as soon as possible.",
+    splatnet_3_version_error_title: "Cannot Check SplatNet 3 Version",
+    splatnet_3_version_error_message: "s3s3 cannot check SplatNet 3 version. Please check your internet connectivity.",
+    fetch_error_title: "Failed to Fetch",
+    fetch_unauthorized_error_message: "s3s3 cannot fetch from SplatNet 3. Your bullet token may be expired. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.",
+    fetch_other_error_message: "s3s3 cannot fetch from SplatNet 3. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n{statusCode}",
+    fetch_network_error_message: "s3s3 cannot fetch from SplatNet 3. Please check your internet connectivity.",
+    uploaded_list_error_title: "Failed to Get Uploaded List",
+    uploaded_list_network_error_message: "s3s3 cannot get uploaded list from stat.ink. Please check your internet connectivity.",
+    uploaded_list_other_error_message: "s3s3 cannot get uploaded list from stat.ink. {message}",
+    upload_error_title: "Failed to Upload",
+    upload_error_other_error_message: "s3s3 cannot upload {id} to stat.ink. {message}",
+    upload_error_bad_request_error_message: "s3s3 cannot upload {id} to stat.ink. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${error}",
+    upload_error_network_error_message: "s3s3 cannot upload to stat.ink. Please check your internet connectivity.",
+    upload_notification_title: "Result Uploaded",
+    upload_notification_body: "New result uploaded to {url}.",
+  },
+  ja: {},
+  zh: {},
+};
+function t(format, values) {
+  let dict;
+  switch (LANG) {
+    case "en-GB":
+    case "en-US":
+      dict = Strings.en;
+      break;
+    case "ja-JP":
+      dict = Strings.ja;
+      break;
+    case "zh-CN":
+    case "zh-TW":
+      dict = Strings.zh;
+      break;
+    default:
+      dict = Strings.en;
+      break;
+  }
+  return (dict[format] ?? Strings.en[format] ?? "").replace(/{(\w+)}/g, (_, key) => values?.[key] ?? `{${key}}`);
 }
