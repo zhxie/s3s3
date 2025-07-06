@@ -14,6 +14,8 @@ let USER_AGENT = "";
 // Debug configuration. DO NOT EDIT unless you know what you are doing.
 // Run in the test mode.
 const TEST_MODE = false;
+// Localization.
+let STRINGS = undefined;
 
 // Check update.
 // HACK: remain A_VERSION for v0.0.1 compatibility.
@@ -25,7 +27,6 @@ if (!updated) {
 }
 
 // Prepare and configuration check.
-
 if (LANG) {
   console.log("Use manually set language");
   Keychain.set("lang", LANG);
@@ -1302,67 +1303,70 @@ function translateWeapon(url) {
   }
 }
 
-const Strings = {
-  en: {
-    ok: "OK",
-    continue: "Continue",
-    quit: "Quit",
-    open_stat_ink_profile: "Open stat.ink Profile",
-    see_instructions: "See Instructions",
-    open_in_splatnet_3: "Open in SplatNet 3",
-    open_stat_ink: "Open stat.ink",
-    update_now: "Update Now",
-    language_input_title: "Select Your Language",
-    language_error_title: "Invalid Language",
-    language_error_message: "Your language is invalid. Please check your configuration.",
-    api_key_input_title: "Input your stat.ink API Key",
-    api_key_input_message: "You can get your API key in https://stat.ink/profile.",
-    api_key_error_title: "Invalid stat.ink API Key",
-    api_key_error_message: "Your stat.ink API key is invalid. You can get your API key in https://stat.ink/profile.",
-    bullet_token_error_title: "Invalid Bullet Token, Cookie or User Agent",
-    bullet_token_error_message: "Your bullet token, cookie or user agent is invalid. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.\n\nIf you are using s3s3 from Mudmouth, please remove s3s3 profile of Mudmouth and add again.",
-    parse_error_alert: "Unrecognized Data",
-    parse_error_message: "s3s3 cannot parse the data of {id}. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\nYou can also open the result in SplatNet 3 to see if it loads correctly. If it does not display properly, the issue might be with SplatNet 3. \n\n{error}",
-    upload_title: "Uploaded Successfully",
-    upload_message: "s3s3 has uploaded your results to stat.ink.",
-    update_title: "New Version Available",
-    update_message: "There is a new version ({version}) of s3s3. Please update s3s3 to the latest version as soon as possible.",
-    splatnet_3_version_error_title: "Cannot Check SplatNet 3 Version",
-    splatnet_3_version_error_message: "s3s3 cannot check SplatNet 3 version. Please check your internet connectivity.",
-    fetch_error_title: "Failed to Fetch",
-    fetch_unauthorized_error_message: "s3s3 cannot fetch from SplatNet 3. Your bullet token may be expired. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.",
-    fetch_other_error_message: "s3s3 cannot fetch from SplatNet 3. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n{statusCode}",
-    fetch_network_error_message: "s3s3 cannot fetch from SplatNet 3. Please check your internet connectivity.",
-    uploaded_list_error_title: "Failed to Get Uploaded List",
-    uploaded_list_network_error_message: "s3s3 cannot get uploaded list from stat.ink. Please check your internet connectivity.",
-    uploaded_list_other_error_message: "s3s3 cannot get uploaded list from stat.ink. {message}",
-    upload_error_title: "Failed to Upload",
-    upload_error_other_error_message: "s3s3 cannot upload {id} to stat.ink. {message}",
-    upload_error_bad_request_error_message: "s3s3 cannot upload {id} to stat.ink. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${error}",
-    upload_error_network_error_message: "s3s3 cannot upload to stat.ink. Please check your internet connectivity.",
-    upload_notification_title: "Result Uploaded",
-    upload_notification_body: "New result uploaded to {url}.",
-  },
-  ja: {},
-  zh: {},
-};
 function t(format, values) {
+  if (!STRINGS) {
+    STRINGS = {
+      en: {
+        ok: "OK",
+        continue: "Continue",
+        quit: "Quit",
+        open_stat_ink_profile: "Open stat.ink Profile",
+        see_instructions: "See Instructions",
+        open_in_splatnet_3: "Open in SplatNet 3",
+        open_stat_ink: "Open stat.ink",
+        update_now: "Update Now",
+        language_input_title: "Select Your Language",
+        language_error_title: "Invalid Language",
+        language_error_message: "Your language is invalid. Please check your configuration.",
+        api_key_input_title: "Input your stat.ink API Key",
+        api_key_input_message: "You can get your API key in https://stat.ink/profile.",
+        api_key_error_title: "Invalid stat.ink API Key",
+        api_key_error_message: "Your stat.ink API key is invalid. You can get your API key in https://stat.ink/profile.",
+        bullet_token_error_title: "Invalid Bullet Token, Cookie or User Agent",
+        bullet_token_error_message: "Your bullet token, cookie or user agent is invalid. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.\n\nIf you are using s3s3 from Mudmouth, please remove s3s3 profile of Mudmouth and add again.",
+        parse_error_alert: "Unrecognized Data",
+        parse_error_message: "s3s3 cannot parse the data of {id}. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\nYou can also open the result in SplatNet 3 to see if it loads correctly. If it does not display properly, the issue might be with SplatNet 3. \n\n{error}",
+        upload_title: "Uploaded Successfully",
+        upload_message: "s3s3 has uploaded your results to stat.ink.",
+        update_title: "New Version Available",
+        update_message: "There is a new version ({version}) of s3s3. Please update s3s3 to the latest version as soon as possible.",
+        splatnet_3_version_error_title: "Cannot Check SplatNet 3 Version",
+        splatnet_3_version_error_message: "s3s3 cannot check SplatNet 3 version. Please check your internet connectivity.",
+        fetch_error_title: "Failed to Fetch",
+        fetch_unauthorized_error_message: "s3s3 cannot fetch from SplatNet 3. Your bullet token may be expired. Please use s3s3 from Mudmouth. See https://github.com/zhxie/s3s3 for more.",
+        fetch_other_error_message: "s3s3 cannot fetch from SplatNet 3. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n{statusCode}",
+        fetch_network_error_message: "s3s3 cannot fetch from SplatNet 3. Please check your internet connectivity.",
+        uploaded_list_error_title: "Failed to Get Uploaded List",
+        uploaded_list_network_error_message: "s3s3 cannot get uploaded list from stat.ink. Please check your internet connectivity.",
+        uploaded_list_other_error_message: "s3s3 cannot get uploaded list from stat.ink. {message}",
+        upload_error_title: "Failed to Upload",
+        upload_error_other_error_message: "s3s3 cannot upload {id} to stat.ink. {message}",
+        upload_error_bad_request_error_message: "s3s3 cannot upload {id} to stat.ink. Please file a bug on https://github.com/zhxie/s3s3/issues. \n\n${error}",
+        upload_error_network_error_message: "s3s3 cannot upload to stat.ink. Please check your internet connectivity.",
+        upload_notification_title: "Result Uploaded",
+        upload_notification_body: "New result uploaded to {url}.",
+      },
+      ja: {},
+      zh: {},
+    };
+  }
+
   let dict;
   switch (LANG) {
     case "en-GB":
     case "en-US":
-      dict = Strings.en;
+      dict = STRINGS.en;
       break;
     case "ja-JP":
-      dict = Strings.ja;
+      dict = STRINGS.ja;
       break;
     case "zh-CN":
     case "zh-TW":
-      dict = Strings.zh;
+      dict = STRINGS.zh;
       break;
     default:
-      dict = Strings.en;
+      dict = STRINGS.en;
       break;
   }
-  return (dict[format] ?? Strings.en[format] ?? "").replace(/{(\w+)}/g, (_, key) => values?.[key] ?? `{${key}}`);
+  return (dict[format] ?? STRINGS.en[format] ?? "").replace(/{(\w+)}/g, (_, key) => values?.[key] ?? `{${key}}`);
 }
