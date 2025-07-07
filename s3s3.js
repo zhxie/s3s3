@@ -234,7 +234,7 @@ for (const group of battleGroups) {
         continue;
       }
 
-      const data = await fetchGraphQl("20f88b10d0b1d264fcb2163b0866de26bbf6f2b362f397a0258a75b7fa900943", { vsResultId: id }, true);
+      const data = await fetchGraphQl("94faa2ff992222d11ced55e0f349920a82ac50f414ae33c83d1d1c9d8161c5dd", { vsResultId: id }, true);
       if (data === undefined) {
         return;
       }
