@@ -221,11 +221,11 @@ if (battleData === undefined) {
 }
 const battleGroups = battleData["latestBattleHistories"]["historyGroups"]["nodes"];
 const battleTotal = battleGroups.reduce((prev, cur) => prev + cur["historyDetails"]["nodes"].length, 0);
-for (const group of battleGroups) {
-  const battleNodes = group["historyDetails"]["nodes"];
-  for (const node of battleNodes) {
+for (let i = battleGroups.length - 1; i >= 0; i--) {
+  const battleNodes = battleGroups[i]["historyDetails"]["nodes"];
+  for (let j = battleNodes.length - 1; j >= 0; j--) {
     battleIndex++;
-    const id = node["id"];
+    const id = battleNodes[j]["id"];
     console.log(`[${battleIndex}/${battleTotal}] Battle ID: ${id}`);
     try {
       const uuid = generateUuidV5("b3a2dbf5-2c09-4792-b78c-00b548b70aeb", Data.fromBase64String(id).toRawString().slice(-52));
@@ -559,11 +559,11 @@ if (jobData === undefined) {
 }
 const jobGroups = jobData["coopResult"]["historyGroups"]["nodes"];
 const jobTotal = jobGroups.reduce((prev, cur) => prev + cur["historyDetails"]["nodes"].length, 0);
-for (const group of jobGroups) {
-  const jobNodes = group["historyDetails"]["nodes"];
-  for (const node of jobNodes) {
+for (let i = jobGroups.length - 1; i >= 0; i--) {
+  const jobNodes = jobGroups[i]["historyDetails"]["nodes"];
+  for (let j = jobNodes.length - 1; j >= 0; j--) {
     jobIndex++;
-    const id = node["id"];
+    const id = jobNodes[j]["id"];
     console.log(`[${jobIndex}/${jobTotal}] Job ID: ${id}`);
     try {
       const uuid = generateUuidV5("f1911910-605e-11ed-a622-7085c2057a9d", Data.fromBase64String(id).toRawString());
