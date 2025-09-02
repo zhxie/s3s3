@@ -712,10 +712,6 @@ for (let i = jobGroups.length - 1; i >= 0; i--) {
         }
 
         playerPayload["weapons"] = player["weapons"].map((weapon) => translateWeapon(weapon["image"]["url"]));
-        for (const weapon of player["weapons"]) {
-          if (weapon["image"]["url"].includes("473fffb2442075078d8bb7125744905abdeae651b6a5b7453ae295582e45f7d1")) {
-          }
-        }
 
         payload["players"].push(playerPayload);
       }
@@ -1311,6 +1307,7 @@ function translateWeapon(url) {
       return Weapons[key];
     }
   }
+  return null;
 }
 
 function t(format, values) {
