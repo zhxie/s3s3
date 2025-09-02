@@ -17,6 +17,16 @@ const TEST_MODE = false;
 // Localization.
 let STRINGS = undefined;
 
+const LATEST_BATTLE_HISTORIES_QUERY = "b24d22fd6cb251c515c2b90044039698aa27bc1fab15801d83014d919cd45780";
+const VS_HISTORY_DETAIL_QUERY = "94faa2ff992222d11ced55e0f349920a82ac50f414ae33c83d1d1c9d8161c5dd";
+const COOP_HISTORY_QUERY = "e11a8cf2c3de7348495dea5cdcaa25e0c153541c4ed63f044b6c174bc5b703df";
+const COOP_HISTORY_DETAIL_QUERY = "f2d55873a9281213ae27edc171e2b19131b3021a2ae263757543cdd3bf015cc8";
+
+const BATTLE_NAMESPACE = "b3a2dbf5-2c09-4792-b78c-00b548b70aeb";
+const JOB_NAMESPACE = "f1911910-605e-11ed-a622-7085c2057a9d";
+const BATTLE_PATH = "s3s";
+const JOB_PATH = "salmon";
+
 // Check update.
 // HACK: remain A_VERSION for v0.0.1 compatibility.
 const A_VERSION = "0.2.3";
@@ -207,7 +217,7 @@ if (SPLATNET_VERSION.length === 0) {
 }
 
 // Fetch uploaded battles.
-const uploadedBattleIds = await getUploaded("s3s");
+const uploadedBattleIds = await getUploaded(BATTLE_PATH);
 if (uploadedBattleIds === undefined) {
   return;
 }
@@ -215,7 +225,7 @@ if (uploadedBattleIds === undefined) {
 // Fetch latest battles.
 // TODO: fetch the latest 50 battles in each modes.
 let battleIndex = 0;
-const battleData = await fetchGraphQl("b24d22fd6cb251c515c2b90044039698aa27bc1fab15801d83014d919cd45780");
+const battleData = await fetchGraphQl(LATEST_BATTLE_HISTORIES_QUERY);
 if (battleData === undefined) {
   return;
 }
@@ -228,13 +238,13 @@ for (let i = battleGroups.length - 1; i >= 0; i--) {
     const id = battleNodes[j]["id"];
     console.log(`[${battleIndex}/${battleTotal}] Battle ID: ${id}`);
     try {
-      const uuid = generateUuidV5("b3a2dbf5-2c09-4792-b78c-00b548b70aeb", Data.fromBase64String(id).toRawString().slice(-52));
+      const uuid = generateUuidV5(BATTLE_NAMESPACE, Data.fromBase64String(id).toRawString().slice(-52));
       if (uploadedBattleIds.includes(uuid)) {
         console.log("Uploaded");
         continue;
       }
 
-      const data = await fetchGraphQl("94faa2ff992222d11ced55e0f349920a82ac50f414ae33c83d1d1c9d8161c5dd", { vsResultId: id }, true);
+      const data = await fetchGraphQl(VS_HISTORY_DETAIL_QUERY, { vsResultId: id }, true);
       if (data === undefined) {
         return;
       }
@@ -546,14 +556,14 @@ for (let i = battleGroups.length - 1; i >= 0; i--) {
 }
 
 // Fetch uploaded jobs.
-const uploadedJobIds = await getUploaded("salmon");
+const uploadedJobIds = await getUploaded(JOB_PATH);
 if (uploadedJobIds === undefined) {
   return;
 }
 
 // Fetch latest jobs.
 let jobIndex = 0;
-const jobData = await fetchGraphQl("e11a8cf2c3de7348495dea5cdcaa25e0c153541c4ed63f044b6c174bc5b703df");
+const jobData = await fetchGraphQl(COOP_HISTORY_QUERY);
 if (jobData === undefined) {
   return;
 }
@@ -566,13 +576,13 @@ for (let i = jobGroups.length - 1; i >= 0; i--) {
     const id = jobNodes[j]["id"];
     console.log(`[${jobIndex}/${jobTotal}] Job ID: ${id}`);
     try {
-      const uuid = generateUuidV5("f1911910-605e-11ed-a622-7085c2057a9d", Data.fromBase64String(id).toRawString());
+      const uuid = generateUuidV5(JOB_NAMESPACE, Data.fromBase64String(id).toRawString());
       if (uploadedJobIds.includes(uuid)) {
         console.log("Uploaded");
         continue;
       }
 
-      const data = await fetchGraphQl("f2d55873a9281213ae27edc171e2b19131b3021a2ae263757543cdd3bf015cc8", { coopHistoryDetailId: id }, true);
+      const data = await fetchGraphQl(COOP_HISTORY_DETAIL_QUERY, { coopHistoryDetailId: id }, true);
       if (data === undefined) {
         return;
       }
