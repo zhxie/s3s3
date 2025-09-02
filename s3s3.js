@@ -29,7 +29,7 @@ const JOB_PATH = "salmon";
 
 // Check update.
 // HACK: remain A_VERSION for v0.0.1 compatibility.
-const A_VERSION = "0.2.3";
+const A_VERSION = "0.2.4";
 console.log(`s3s3 v${A_VERSION}`);
 const updated = await checkUpdate();
 if (!updated) {
