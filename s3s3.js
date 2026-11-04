@@ -399,7 +399,7 @@ for (let i = battleGroups.length - 1; i >= 0; i--) {
         const teamPayload = [];
         for (let playerIndex = 0; playerIndex < team["players"].length; playerIndex++) {
           const player = team["players"][playerIndex];
-          playerPayload = {};
+          const playerPayload = {};
           playerPayload["me"] = player["isMyself"] ? "yes" : "no";
           playerPayload["name"] = player["name"];
           if (player["nameId"]) {
