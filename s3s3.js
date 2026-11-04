@@ -397,7 +397,8 @@ for (let i = battleGroups.length - 1; i >= 0; i--) {
       for (let i = 0; i < teams.length; i++) {
         const team = teams[i];
         const teamPayload = [];
-        for (const player of team["players"]) {
+        for (let playerIndex = 0; playerIndex < team["players"].length; playerIndex++) {
+          const player = team["players"][playerIndex];
           playerPayload = {};
           playerPayload["me"] = player["isMyself"] ? "yes" : "no";
           playerPayload["name"] = player["name"];
@@ -408,7 +409,7 @@ for (let i = battleGroups.length - 1; i >= 0; i--) {
           playerPayload["weapon"] = decodeBase64Index(player["weapon"]["id"]);
           playerPayload["inked"] = player["paint"];
           playerPayload["species"] = player["species"].toLowerCase();
-          playerPayload["rank_in_team"] = i + 1;
+          playerPayload["rank_in_team"] = playerIndex + 1;
 
           if (player["crown"]) {
             playerPayload["crown_type"] = "x";
